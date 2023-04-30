@@ -10,8 +10,8 @@
 
 typedef unsigned __int128 finger_t;
 
-#define ARTICLE_CNT 4096
-#define SAMPLE_CNT 1024
+#define ARTICLE_CNT 32768
+#define SAMPLE_CNT 32768
 #define WORD_SZE 4096
 
 int str_to_int(const char *s) {
