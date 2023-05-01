@@ -10,6 +10,7 @@ typedef struct {
 
 // extern freq_t freqs[1048576];
 extern trie_ndoe_article_t *freqs[1048576];
+extern int idx[];
 // extern int freq_sze;
 
 // In this version, I use the `qsort`

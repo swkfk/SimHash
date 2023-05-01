@@ -7,8 +7,6 @@
 #define PIECE_RESERVED 1048576
 // #define PIECE_RESERVED 65536
 
-#define MEMALLOC ask_mem
-
 typedef struct {
     size_t offset;
     size_t count;
@@ -19,8 +17,7 @@ typedef struct {
 void new_pool(size_t, pool_t *);
 void *ask_mem(size_t);
 
-void *ask_mem_from_fake_pool(size_t);
-int *ask_mem_article_count();
+void *ask_mem_article_count();
 
 extern pool_t pool;
 extern pool_t pool_article;

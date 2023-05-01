@@ -1,13 +1,15 @@
 #include "freq_sort.h"
+#include "consts.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 // freq_t freqs[1048576];
-int idx[1048576];
+int idx[WORD_CNT];
 int freq_sze;
 
-trie_ndoe_article_t *freqs[1048576];
+trie_ndoe_article_t *freqs[WORD_CNT];
 
 // int freq_cmp(const void *pa, const void *pb) {
 //     freq_t *a = (freq_t *) pa;
@@ -43,7 +45,8 @@ int freq_cmp_idx(const void *pa, const void *pb) {
 
 void get_sorted_feature_article(trie_ndoe_article_t *root) {
     walk_trie_tree_article(root);
-    qsort(freqs, freq_sze, sizeof(trie_ndoe_article_t *), freq_cmp);
+    // qsort(freqs, freq_sze, sizeof(trie_ndoe_article_t *), freq_cmp);
+    qsort(idx, freq_sze, sizeof(int), freq_cmp_idx);
 }
 
 static char buf[4096];
@@ -67,6 +70,7 @@ static int buf_sze;
 
 void walk_trie_tree_article(trie_ndoe_article_t *root) {
     if (root->count) {
+        idx[freq_sze] = freq_sze;
         freqs[freq_sze++] = root;
     }
     for (int i = 1; i <= 26; ++i) {

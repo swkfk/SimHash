@@ -12,6 +12,7 @@
 #include <stdio.h>
 
 #include "char_ops.h"
+#include "consts.h"
 #include "freq_sort.h"
 #include "hash_ops.h"
 #include "mempool.h"
@@ -26,10 +27,6 @@
 #endif
 
 typedef unsigned __int128 finger_t;
-
-#define ARTICLE_CNT 32768
-#define SAMPLE_CNT 32768
-#define WORD_SZE 4096
 
 int str_to_int(const char *s) {
     int res = 0;
@@ -143,7 +140,7 @@ EndOfReadArticle:
     // work out the articles' fingers
     for (int i = 0; i < article_sze; ++i) {
         for (int j = 0; j < vector_length; ++j) {
-            web_weight[j] = freqs[j]->article_cnt[i];
+            web_weight[j] = freqs[idx[j]]->article_cnt[i];
         }
         for (int finger_bit = finger_length - 1; finger_bit >= 0; --finger_bit) {
             tmp = 0;
@@ -189,7 +186,7 @@ EndOfReadSample:
     // figure out the samples' fingers
     for (int i = 0; i < sample_sze; ++i) {
         for (int j = 0; j < vector_length; ++j) {
-            web_weight[j] = freqs[j]->article_cnt[i + article_sze];
+            web_weight[j] = freqs[idx[j]]->article_cnt[i + article_sze];
         }
         for (int finger_bit = finger_length - 1; finger_bit >= 0; --finger_bit) {
             tmp = 0;

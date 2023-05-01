@@ -5,12 +5,12 @@
 // ======== Mem pool ========
 
 pool_t pool = {.count = PIECE_RESERVED, .used = 0, .start = NULL};
-pool_t pool_article = {.count = PIECE_RESERVED >> 4, .used = 0, .start = NULL};
+pool_t pool_article = {.count = PIECE_RESERVED >> 8, .used = 0, .start = NULL};
 
 void new_pool(size_t offset, pool_t *p) {
     p->offset = offset;
     p->used = 0;
-    p->start = malloc(offset * p->count);
+    p->start = calloc(p->count, offset);
 }
 
 void *ask_mem(size_t sze) {
@@ -20,7 +20,7 @@ void *ask_mem(size_t sze) {
     return pool.start + (pool.used++ * pool.offset);
 }
 
-int *ask_mem_article_count() {
+void *ask_mem_article_count() {
     if (pool_article.used == pool_article.count) {
         new_pool(sze_article_count, &pool_article);
     }
