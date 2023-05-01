@@ -15,7 +15,7 @@ int freq_cmp(const void *pa, const void *pb) {
     return b->freq - a->freq;
 }
 
-void get_sorted_feature(tire_ndoe_t *root) {
+void get_sorted_feature(trie_ndoe_t *root) {
     walk_tire_tree(root);
     qsort(freqs, freq_sze, sizeof(freq_t), freq_cmp);
 }
@@ -23,7 +23,7 @@ void get_sorted_feature(tire_ndoe_t *root) {
 static char buf[4096];
 static int buf_sze;
 
-void walk_tire_tree(tire_ndoe_t *root) {
+void walk_tire_tree(trie_ndoe_t *root) {
     if (root->count) {
         memcpy(freqs[freq_sze].word, buf, buf_sze);
         freqs[freq_sze].word[buf_sze] = '\0';

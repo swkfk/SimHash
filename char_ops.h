@@ -10,6 +10,7 @@
 #define ISUPPER(c) ((c) >= 'A' && (c) <= 'Z')
 #define ISLOWER(c) ((c) >= 'a' && (c) <= 'z')
 #define ISALPHA(c) ((ISLOWER(c)) || (ISUPPER(c)))
+#define ISWHITE(c) ((c) == ' ' || (c) == '\n' || (c) == '\t' || (c) == '\r')
 
 typedef enum { Ok, Ff, Eof } skip_stat_t;
 skip_stat_t skip(FILE *);

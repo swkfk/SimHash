@@ -1,3 +1,10 @@
+#include "patch_io.h"
+#ifdef __GNUC__
+#pragma GCC push_options
+#pragma GCC optimize("O3")
+#pragma GCC pop_options
+#endif
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -5,8 +12,9 @@
 #include "char_ops.h"
 #include "freq_sort.h"
 #include "hash_ops.h"
+#include "patch_io.h"
 #include "stop_ops.h"
-#include "tire.h"
+#include "trie.h"
 
 typedef unsigned __int128 finger_t;
 
@@ -24,9 +32,9 @@ int str_to_int(const char *s) {
 }
 
 int vector_length, finger_length;
-tire_ndoe_t *total_root;
-tire_ndoe_t *sample_root[SAMPLE_CNT];
-tire_ndoe_t *article_root[ARTICLE_CNT];
+trie_ndoe_t *total_root;
+trie_ndoe_t *sample_root[SAMPLE_CNT];
+trie_ndoe_t *article_root[ARTICLE_CNT];
 
 char article_ids[ARTICLE_CNT][64];
 int article_sze;
@@ -55,7 +63,7 @@ int buf_sze;
 int tmp;
 FILE *stream;
 
-skip_stat_t skip_ret;
+int skip_ret;
 
 int main(int argc, char *argv[]) {
     // cope with the args
@@ -67,32 +75,36 @@ int main(int argc, char *argv[]) {
     read_hash_value(vector_length, finger_length);
 
     // ======== read articles ========
-    stream = fopen("article.txt", "r");
+    open_read_handle("article.txt");
     for (;;) {
         // read the article id
-        if (fscanf(stream, "%s", article_ids[article_sze++]) == EOF) {
+        if (ask_string(article_ids[article_sze++]) == EOF) {
             --article_sze;
             break;
         }
         // read the words in the article
         for (;;) {
-            (void) skip(stream);
-            fscanf(stream, "%4096[a-zA-Z]", buf);
-            skip_ret = skip(stream);
+            (void) skip_noalpha();
+            // printf("In main loop: Tag 01\n");
+            ask_word(buf);
+            // printf("In main loop: Tag 02: %s\n", buf);
+            skip_ret = skip_noalpha();
             if (!is_stop_word(buf)) {
                 insert_word(&total_root, buf);
                 insert_word(&article_root[article_sze - 1], buf);
             }
-            if (skip_ret == Eof) {
+            if (skip_ret == -1) {
+                // EOF
                 goto EndOfReadArticle;
             }
-            if (skip_ret == Ff) {
+            if (skip_ret == 1) {
+                // '\f'
                 break;
             }
         }
     }
 EndOfReadArticle:
-    fclose(stream);
+    close_io_handle();
 
     // ========  ========
 
@@ -114,31 +126,33 @@ EndOfReadArticle:
     }
 
     // ======== read samples ========
-    stream = fopen("sample.txt", "r");
+    open_read_handle("sample.txt");
     for (;;) {
         // read the sample id
-        if (fscanf(stream, "%s", sample_ids[sample_sze++]) == EOF) {
+        if (ask_string(sample_ids[sample_sze++]) == EOF) {
             --sample_sze;
             break;
         }
         // read the words in the article
         for (;;) {
-            (void) skip(stream);
-            fscanf(stream, "%4096[a-zA-Z]", buf);
-            skip_ret = skip(stream);
+            (void) skip_noalpha();
+            ask_word(buf);
+            skip_ret = skip_noalpha();
             if (!is_stop_word(buf)) {
                 insert_word(&sample_root[sample_sze - 1], buf);
             }
-            if (skip_ret == Eof) {
+            if (skip_ret == -1) {
+                // EOF
                 goto EndOfReadSample;
             }
-            if (skip_ret == Ff) {
+            if (skip_ret == 1) {
+                // '\f'
                 break;
             }
         }
     }
 EndOfReadSample:
-    fclose(stream);
+    close_io_handle();
 
     // ========  ========
 
@@ -158,7 +172,7 @@ EndOfReadSample:
 
     // cmp the fingers
     // I promise that I would make them more graceful!!!
-    stream = fopen("result.txt", "w");
+    open_write_handle("result.txt");
     for (int sam_idx = 0; sam_idx < sample_sze; ++sam_idx) {
         hamming_0_sze = hamming_1_sze = hamming_2_sze = hamming_3_sze = 0;
         for (int art_idx = 0; art_idx < article_sze; ++art_idx) {
@@ -204,38 +218,42 @@ EndOfReadSample:
                 putchar('\n');
             }
         }
-        fputs(sample_ids[sam_idx], stream);
-        fputc('\n', stream);
+        println(sample_ids[sam_idx]);
         if (hamming_0_sze) {
-            fprintf(stream, "0:");
+            prints("0:");
             for (int i = 0; i < hamming_0_sze; ++i) {
-                fprintf(stream, "%s ", article_ids[hamming_0[i]]);
+                prints(article_ids[hamming_0[i]]);
+                printc(' ');
             }
-            fputc('\n', stream);
+            endl();
         }
         if (hamming_1_sze) {
-            fprintf(stream, "1:");
+            prints("1:");
             for (int i = 0; i < hamming_1_sze; ++i) {
-                fprintf(stream, "%s ", article_ids[hamming_1[i]]);
+                prints(article_ids[hamming_1[i]]);
+                printc(' ');
             }
-            fputc('\n', stream);
+            endl();
         }
         if (hamming_2_sze) {
-            fprintf(stream, "2:");
+            prints("2:");
             for (int i = 0; i < hamming_2_sze; ++i) {
-                fprintf(stream, "%s ", article_ids[hamming_2[i]]);
+                prints(article_ids[hamming_2[i]]);
+                printc(' ');
             }
-            fputc('\n', stream);
+            endl();
         }
         if (hamming_3_sze) {
-            fprintf(stream, "3:");
+            prints("3:");
             for (int i = 0; i < hamming_3_sze; ++i) {
-                fprintf(stream, "%s ", article_ids[hamming_3[i]]);
+                prints(article_ids[hamming_3[i]]);
+                printc(' ');
             }
-            fputc('\n', stream);
+            endl();
         }
     }
-    fclose(stream);
+    flush();
+    close_io_handle();
 
     return 0;
 }

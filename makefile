@@ -27,6 +27,6 @@ pack:
 	zip -0 ${PACK} *.c *.h makefile
 
 show:
-	@git br
-	@echo "********************************"
-	@wc -l *.c *.h makefile
+	git br
+	@echo "================================================"
+	wc -l *.c *.h makefile

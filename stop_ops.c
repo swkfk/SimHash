@@ -1,9 +1,9 @@
 #include "stop_ops.h"
-#include "tire.h"
+#include "trie.h"
 
 #include <stdio.h>
 
-static tire_ndoe_t *stop_root;
+static trie_ndoe_t *stop_root;
 
 void read_stop_words() {
     FILE *stop_in = fopen("stopwords.txt", "r");
