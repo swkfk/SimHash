@@ -1,13 +1,17 @@
 #include "trie.h"
 #include "char_ops.h"
+#include "mempool.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+const size_t sze = sizeof(trie_ndoe_t);
+
 trie_ndoe_t *new_tire_node() {
-    trie_ndoe_t *node = (trie_ndoe_t *) malloc(sizeof(trie_ndoe_t));
-    memset(node, 0, sizeof(trie_ndoe_t));
+    // trie_ndoe_t *node = (trie_ndoe_t *) malloc(sizeof(trie_ndoe_t));
+    trie_ndoe_t *node = (trie_ndoe_t *) MEMALLOC(sze);
+    memset(node, 0, sze);
     return node;
 }
 
