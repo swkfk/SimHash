@@ -5,6 +5,8 @@
 #pragma GCC pop_options
 #endif
 
+// #define DEBUG
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -12,9 +14,16 @@
 #include "char_ops.h"
 #include "freq_sort.h"
 #include "hash_ops.h"
+#include "mempool.h"
 #include "patch_io.h"
 #include "stop_ops.h"
 #include "trie.h"
+
+#ifdef DEBUG
+#define printf_d printf
+#else
+#define printf_d(...) ;
+#endif
 
 typedef unsigned __int128 finger_t;
 
@@ -32,9 +41,8 @@ int str_to_int(const char *s) {
 }
 
 int vector_length, finger_length;
-trie_ndoe_t *total_root;
+trie_ndoe_article_t *total_root;
 trie_ndoe_t *sample_root[SAMPLE_CNT];
-trie_ndoe_t *article_root[ARTICLE_CNT];
 
 char article_ids[ARTICLE_CNT][64];
 int article_sze;
@@ -66,13 +74,28 @@ FILE *stream;
 int skip_ret;
 
 int main(int argc, char *argv[]) {
+    printf_d("Run!\n");
+
     // cope with the args
     assert(argc == 3);
     vector_length = str_to_int(argv[1]);
     finger_length = str_to_int(argv[2]);
 
+    printf_d("Here\n");
+
+    new_pool(sze_node, &pool);
     read_stop_words();
+    printf_d("Rear stop words over!\n");
+
     read_hash_value(vector_length, finger_length);
+    printf_d("Rear hashes over!\n");
+
+    printf_d("Before new_pool\n");
+
+    new_pool(sze_article, &pool);
+    new_pool(sze_article_count, &pool_article);
+
+    printf_d("start to read articles\n");
 
     // ======== read articles ========
     open_read_handle("article.txt");
@@ -82,6 +105,7 @@ int main(int argc, char *argv[]) {
             --article_sze;
             break;
         }
+        // printf_d("article: %05d\n", article_sze);
         // read the words in the article
         for (;;) {
             (void) skip_noalpha();
@@ -90,8 +114,9 @@ int main(int argc, char *argv[]) {
             // printf("In main loop: Tag 02: %s\n", buf);
             skip_ret = skip_noalpha();
             if (!is_stop_word(buf)) {
-                insert_word(&total_root, buf);
-                insert_word(&article_root[article_sze - 1], buf);
+                printf_d("<Read %s>\n", buf);
+                insert_article_word(&total_root, buf, article_sze - 1);
+                printf_d("</Read>\n");
             }
             if (skip_ret == -1) {
                 // EOF
@@ -106,15 +131,19 @@ int main(int argc, char *argv[]) {
 EndOfReadArticle:
     close_io_handle();
 
+    printf_d("read articles over!\n");
+
     // ========  ========
 
     // sort the feature words
-    get_sorted_feature(total_root);
+    get_sorted_feature_article(total_root);
+
+    printf_d("Sorted  Over!\n");
 
     // work out the articles' fingers
     for (int i = 0; i < article_sze; ++i) {
         for (int j = 0; j < vector_length; ++j) {
-            web_weight[j] = find_word(article_root[i], freqs[j].word);
+            web_weight[j] = freqs[j]->article_cnt[i];
         }
         for (int finger_bit = finger_length - 1; finger_bit >= 0; --finger_bit) {
             tmp = 0;
@@ -126,6 +155,7 @@ EndOfReadArticle:
     }
 
     // ======== read samples ========
+    // new_pool(sze_node);
     open_read_handle("sample.txt");
     for (;;) {
         // read the sample id
@@ -139,7 +169,7 @@ EndOfReadArticle:
             ask_word(buf);
             skip_ret = skip_noalpha();
             if (!is_stop_word(buf)) {
-                insert_word(&sample_root[sample_sze - 1], buf);
+                insert_article_word(&total_root, buf, article_sze + sample_sze - 1);
             }
             if (skip_ret == -1) {
                 // EOF
@@ -159,7 +189,7 @@ EndOfReadSample:
     // figure out the samples' fingers
     for (int i = 0; i < sample_sze; ++i) {
         for (int j = 0; j < vector_length; ++j) {
-            web_weight[j] = find_word(sample_root[i], freqs[j].word);
+            web_weight[j] = freqs[j]->article_cnt[i + article_sze];
         }
         for (int finger_bit = finger_length - 1; finger_bit >= 0; --finger_bit) {
             tmp = 0;
