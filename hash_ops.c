@@ -1,9 +1,11 @@
 #include "hash_ops.h"
 #include <stdio.h>
 
+#ifdef USE_INT_HASH
+int hash[128][10000];
+#else
 hash_t hashes[10000];
-
-// int hash[10000][128];
+#endif
 
 static char buf[512];
 
@@ -19,8 +21,11 @@ void read_hash_value(int rown, int coln) {
     for (int row = 0; row < rown; ++row) {
         fgets(buf, 512, stream);
         for (int i = 0; i < coln; ++i) {
+#ifdef USE_INT_HASH
+            hash[i][row] = buf[i] == '1' ? 1 : -1;
+#else
             hashes[row] = hashes[row] << 1 | (buf[i] == '1');
-            // hash[row][i] = buf[i] == '1' ? 1 : -1;
+#endif
         }
     }
     fclose(stream);

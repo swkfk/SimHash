@@ -156,11 +156,18 @@ EndOfReadArticle:
         for (int j = 0; j < vector_length; ++j) {
             web_weight[j] = freqs[idx[j]]->article_cnt[i];
         }
+#ifdef USE_INT_HASH
+        for (int finger_bit = 0; finger_bit < finger_length; ++finger_bit) {
+#else
         for (int finger_bit = finger_length - 1; finger_bit >= 0; --finger_bit) {
+#endif
             tmp = 0;
             for (int j = 0; j < vector_length; ++j) {
-                // tmp += web_weight[j] * hash[j][finger_bit];
+#ifdef USE_INT_HASH
+                tmp += web_weight[j] * hash[finger_bit][j];
+#else
                 tmp += web_weight[j] * ((hashes[j] >> finger_bit & 1) ? 1 : -1);
+#endif
             }
             article_fingers[i] = article_fingers[i] << 1 | (tmp > 0);
         }
@@ -203,11 +210,18 @@ EndOfReadSample:
         for (int j = 0; j < vector_length; ++j) {
             web_weight[j] = freqs[idx[j]]->article_cnt[i + article_sze];
         }
+#ifdef USE_INT_HASH
+        for (int finger_bit = 0; finger_bit < finger_length; ++finger_bit) {
+#else
         for (int finger_bit = finger_length - 1; finger_bit >= 0; --finger_bit) {
+#endif
             tmp = 0;
             for (int j = 0; j < vector_length; ++j) {
-                // tmp += web_weight[j] * hash[j][finger_bit];
+#ifdef USE_INT_HASH
+                tmp += web_weight[j] * hash[finger_bit][j];
+#else
                 tmp += web_weight[j] * ((hashes[j] >> finger_bit & 1) ? 1 : -1);
+#endif
             }
             sample_fingers[i] = sample_fingers[i] << 1 | (tmp > 0);
         }
