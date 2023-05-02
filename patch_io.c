@@ -1,5 +1,7 @@
 #include "patch_io.h"
 #include "char_ops.h"
+#include "trie.h"
+
 #include <stdio.h>
 
 static patch_io_t handle;
@@ -43,6 +45,14 @@ int ask_word(char *out) {
     } else {
         return 0;
     }
+}
+
+void read_word() {
+    int chr;
+    while (chr = ask_char(), ISALPHA(chr)) {
+        insert_char(chr);
+    }
+    finish_word();
 }
 
 int ask_string(char *out) {

@@ -116,19 +116,22 @@ int main(int argc, char *argv[]) {
             --article_sze;
             break;
         }
-        // printf_d("article: %05d\n", article_sze);
+        printf_d("article: %05d\n", article_sze);
         // read the words in the article
+        new_article(article_sze - 1, &total_root);
         for (;;) {
             (void) skip_noalpha();
-            // printf("In main loop: Tag 01\n");
-            ask_word(buf);
+            printf_d("<read word>\n");
+            // ask_word(buf);
+            read_word();
+            printf_d("</read word>\n");
             // printf("In main loop: Tag 02: %s\n", buf);
             skip_ret = skip_noalpha();
-            if (!is_stop_word(buf)) {
-                printf_d("<Read %s>\n", buf);
-                insert_article_word(&total_root, buf, article_sze - 1);
-                printf_d("</Read>\n");
-            }
+            // if (!is_stop_word(buf)) {
+            //     printf_d("<Read %s>\n", buf);
+            //     insert_article_word(&total_root, buf, article_sze - 1);
+            //     printf_d("</Read>\n");
+            // }
             if (skip_ret == -1) {
                 // EOF
                 goto EndOfReadArticle;
@@ -183,13 +186,15 @@ EndOfReadArticle:
             break;
         }
         // read the words in the article
+        new_article(article_sze + sample_sze - 1, &total_root);
         for (;;) {
             (void) skip_noalpha();
-            ask_word(buf);
+            // ask_word(buf);
+            read_word();
             skip_ret = skip_noalpha();
-            if (!is_stop_word(buf)) {
-                insert_article_word(&total_root, buf, article_sze + sample_sze - 1);
-            }
+            // if (!is_stop_word(buf)) {
+            //     insert_article_word(&total_root, buf, article_sze + sample_sze - 1);
+            // }
             if (skip_ret == -1) {
                 // EOF
                 goto EndOfReadSample;

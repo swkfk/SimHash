@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-static trie_ndoe_t *stop_root;
+trie_ndoe_t *stop_root;
 
 void read_stop_words() {
     FILE *stop_in = fopen("stopwords.txt", "r");

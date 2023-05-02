@@ -19,6 +19,7 @@ void close_io_handle();
 
 int ask_char();
 int ask_word(char *);
+void read_word();
 int ask_string(char *);
 void un_char(int);
 
