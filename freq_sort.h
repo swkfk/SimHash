@@ -20,5 +20,5 @@ void get_sorted_feature_article(trie_ndoe_article_t *);
 
 // void walk_trie_tree(trie_ndoe_t *);
 void walk_trie_tree_article(trie_ndoe_article_t *);
-
+void stack_preorder(trie_ndoe_article_t *);
 #endif

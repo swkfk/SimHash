@@ -230,9 +230,10 @@ EndOfReadSample:
     // cmp the fingers
     // I promise that I would make them more graceful!!!
     open_write_handle("result.txt");
+    int art_idx;
     for (int sam_idx = 0; sam_idx < sample_sze; ++sam_idx) {
         hamming_0_sze = hamming_1_sze = hamming_2_sze = hamming_3_sze = 0;
-        for (int art_idx = 0; art_idx < article_sze; ++art_idx) {
+        for (art_idx = 0; art_idx < article_sze; ++art_idx) {
             tmp = popcnt_u128(article_fingers[art_idx] ^ sample_fingers[sam_idx]);
             // tmp = hamming(article_fingers[art_idx] ^ sample_fingers[sam_idx], finger_length);
             if (tmp == 0) {
