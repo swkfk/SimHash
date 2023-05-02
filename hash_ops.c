@@ -3,6 +3,8 @@
 
 hash_t hashes[10000];
 
+// int hash[10000][128];
+
 static char buf[512];
 
 void print_u128(hash_t x) {
@@ -18,11 +20,13 @@ void read_hash_value(int rown, int coln) {
         fgets(buf, 512, stream);
         for (int i = 0; i < coln; ++i) {
             hashes[row] = hashes[row] << 1 | (buf[i] == '1');
+            // hash[row][i] = buf[i] == '1' ? 1 : -1;
         }
     }
     fclose(stream);
 }
 
+// like popcount
 int hamming(unsigned __int128 src, int n) {
     int res = 0;
     while (n--) {

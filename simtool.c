@@ -1,9 +1,11 @@
 #include "patch_io.h"
-#ifdef __GNUC__
+
 #pragma GCC push_options
+
 #pragma GCC optimize("O3")
+#pragma GCC target("popcnt")
+
 #pragma GCC pop_options
-#endif
 
 // #define DEBUG
 
@@ -35,6 +37,18 @@ int str_to_int(const char *s) {
         res = res * 10 + TODIGIT(*p);
     } while (*++p);
     return res;
+}
+
+typedef union {
+    __uint128_t u128;
+    uint64_t u64[2];
+} u128_t;
+
+static inline uint_fast8_t popcnt_u128(__uint128_t n) {
+    const u128_t u = {.u128 = n};
+    const uint_fast8_t cnt_a = __builtin_popcountll(u.u64[0]);
+    const uint_fast8_t cnt_b = __builtin_popcountll(u.u64[1]);
+    return cnt_a + cnt_b;
 }
 
 int vector_length, finger_length;
@@ -145,6 +159,7 @@ EndOfReadArticle:
         for (int finger_bit = finger_length - 1; finger_bit >= 0; --finger_bit) {
             tmp = 0;
             for (int j = 0; j < vector_length; ++j) {
+                // tmp += web_weight[j] * hash[j][finger_bit];
                 tmp += web_weight[j] * ((hashes[j] >> finger_bit & 1) ? 1 : -1);
             }
             article_fingers[i] = article_fingers[i] << 1 | (tmp > 0);
@@ -191,6 +206,7 @@ EndOfReadSample:
         for (int finger_bit = finger_length - 1; finger_bit >= 0; --finger_bit) {
             tmp = 0;
             for (int j = 0; j < vector_length; ++j) {
+                // tmp += web_weight[j] * hash[j][finger_bit];
                 tmp += web_weight[j] * ((hashes[j] >> finger_bit & 1) ? 1 : -1);
             }
             sample_fingers[i] = sample_fingers[i] << 1 | (tmp > 0);
@@ -203,7 +219,8 @@ EndOfReadSample:
     for (int sam_idx = 0; sam_idx < sample_sze; ++sam_idx) {
         hamming_0_sze = hamming_1_sze = hamming_2_sze = hamming_3_sze = 0;
         for (int art_idx = 0; art_idx < article_sze; ++art_idx) {
-            tmp = hamming(article_fingers[art_idx] ^ sample_fingers[sam_idx], finger_length);
+            tmp = popcnt_u128(article_fingers[art_idx] ^ sample_fingers[sam_idx]);
+            // tmp = hamming(article_fingers[art_idx] ^ sample_fingers[sam_idx], finger_length);
             if (tmp == 0) {
                 hamming_0[hamming_0_sze++] = art_idx;
             } else if (tmp == 1) {
