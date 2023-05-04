@@ -84,14 +84,7 @@ FILE *stream;
 
 int skip_ret;
 
-int main(int argc, char *argv[]) {
-    printf_d("Run!\n");
-
-    // cope with the args
-    assert(argc == 3);
-    vector_length = str_to_int(argv[1]);
-    finger_length = str_to_int(argv[2]);
-
+void foo_1() {
     printf_d("Here\n");
 
     new_pool(sze_node, &pool);
@@ -107,8 +100,9 @@ int main(int argc, char *argv[]) {
     new_pool(sze_article_count, &pool_article);
 
     printf_d("start to read articles\n");
+}
 
-    // ======== read articles ========
+void foo_2() {
     open_read_handle("article.txt");
     for (;;) {
         // read the article id
@@ -146,18 +140,16 @@ EndOfReadArticle:
     close_io_handle();
 
     printf_d("read articles over!\n");
+}
 
-    // ========  ========
+void foo_3_1(int i, int j) {
+    web_weight[j] = freqs[idx[j]]->article_cnt[i];
+}
 
-    // sort the feature words
-    get_sorted_feature_article(total_root);
-
-    printf_d("Sorted  Over!\n");
-
-    // work out the articles' fingers
+void foo_3() {
     for (int i = 0; i < article_sze; ++i) {
         for (int j = 0; j < vector_length; ++j) {
-            web_weight[j] = freqs[idx[j]]->article_cnt[i];
+            foo_3_1(i, j);
         }
 #ifdef USE_INT_HASH
         for (int finger_bit = 0; finger_bit < finger_length; ++finger_bit) {
@@ -175,9 +167,9 @@ EndOfReadArticle:
             article_fingers[i] = article_fingers[i] << 1 | (tmp > 0);
         }
     }
+}
 
-    // ======== read samples ========
-    // new_pool(sze_node);
+void foo_4() {
     open_read_handle("sample.txt");
     for (;;) {
         // read the sample id
@@ -207,10 +199,9 @@ EndOfReadArticle:
     }
 EndOfReadSample:
     close_io_handle();
+}
 
-    // ========  ========
-
-    // figure out the samples' fingers
+void foo_5() {
     for (int i = 0; i < sample_sze; ++i) {
         for (int j = 0; j < vector_length; ++j) {
             web_weight[j] = freqs[idx[j]]->article_cnt[i + article_sze];
@@ -231,9 +222,9 @@ EndOfReadSample:
             sample_fingers[i] = sample_fingers[i] << 1 | (tmp > 0);
         }
     }
+}
 
-    // cmp the fingers
-    // I promise that I would make them more graceful!!!
+void foo_6() {
     open_write_handle("result.txt");
     int art_idx;
     for (int sam_idx = 0; sam_idx < sample_sze; ++sam_idx) {
@@ -318,6 +309,43 @@ EndOfReadSample:
     }
     flush();
     close_io_handle();
+}
+
+int main(int argc, char *argv[]) {
+    printf_d("Run!\n");
+
+    // cope with the args
+    assert(argc == 3);
+    vector_length = str_to_int(argv[1]);
+    finger_length = str_to_int(argv[2]);
+
+    foo_1();
+
+    // ======== read articles ========
+
+    foo_2();
+
+    // ========  ========
+
+    // sort the feature words
+    get_sorted_feature_article(total_root);
+
+    printf_d("Sorted  Over!\n");
+
+    // work out the articles' fingers
+    foo_3();
+    // ======== read samples ========
+    // new_pool(sze_node);
+    foo_4();
+
+    // ========  ========
+
+    // figure out the samples' fingers
+    foo_5();
+
+    // cmp the fingers
+    // I promise that I would make them more graceful!!!
+    foo_6();
 
     return 0;
 }
