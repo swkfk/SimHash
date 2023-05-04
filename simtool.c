@@ -1,4 +1,5 @@
 #include "patch_io.h"
+#include <string.h>
 
 #pragma GCC push_options
 
@@ -63,7 +64,8 @@ char sample_ids[SAMPLE_CNT][64];
 int sample_sze;
 finger_t sample_fingers[ARTICLE_CNT];
 
-int web_weight[10000]; // tmp, each article & sample
+// int web_weight[10000]; // tmp, each article & sample
+int *web_weight;
 
 // the distance for each sample
 // I promise that I would make them more graceful!!!
@@ -79,7 +81,10 @@ int hamming_3_sze;
 char buf[WORD_SZE];
 int buf_sze;
 
+int word_count[ARTICLE_CNT][10000];
+
 int tmp;
+unsigned __int128 tmp128;
 FILE *stream;
 
 int skip_ret;
@@ -142,30 +147,47 @@ EndOfReadArticle:
     printf_d("read articles over!\n");
 }
 
+int *arr_tmp;
+
+void foo_3_0() {
+    for (int j = 0; j < vector_length; ++j) {
+        arr_tmp = freqs[idx[j]]->article_cnt;
+        for (int i = 0; i < article_sze; ++i) {
+            word_count[i][j] = arr_tmp[i];
+        }
+        // memcpy(word_count[j], arr_tmp, sizeof(int) * article_sze);
+    }
+}
+
+void foo_3_0_0() {
+    for (int j = 0; j < vector_length; ++j) {
+        arr_tmp = freqs[idx[j]]->article_cnt;
+        for (int i = 0; i < sample_sze; ++i) {
+            word_count[i][j] = arr_tmp[i + article_sze];
+        }
+    }
+}
+
 void foo_3_1(int i, int j) {
     web_weight[j] = freqs[idx[j]]->article_cnt[i];
 }
 
 void foo_3() {
     for (int i = 0; i < article_sze; ++i) {
-        for (int j = 0; j < vector_length; ++j) {
-            foo_3_1(i, j);
-        }
-#ifdef USE_INT_HASH
+        // for (int j = 0; j < vector_length; ++j) {
+        //     // foo_3_1(i, j);
+        // }
+        web_weight = word_count[i];
+        tmp128 = 0;
         for (int finger_bit = 0; finger_bit < finger_length; ++finger_bit) {
-#else
-        for (int finger_bit = finger_length - 1; finger_bit >= 0; --finger_bit) {
-#endif
             tmp = 0;
+            arr_tmp = hash[finger_bit];
             for (int j = 0; j < vector_length; ++j) {
-#ifdef USE_INT_HASH
-                tmp += web_weight[j] * hash[finger_bit][j];
-#else
-                tmp += web_weight[j] * ((hashes[j] >> finger_bit & 1) ? 1 : -1);
-#endif
+                tmp += web_weight[j] * arr_tmp[j];
             }
-            article_fingers[i] = article_fingers[i] << 1 | (tmp > 0);
+            tmp128 = tmp128 << 1 | (tmp > 0);
         }
+        article_fingers[i] = tmp128;
     }
 }
 
@@ -203,24 +225,20 @@ EndOfReadSample:
 
 void foo_5() {
     for (int i = 0; i < sample_sze; ++i) {
-        for (int j = 0; j < vector_length; ++j) {
-            web_weight[j] = freqs[idx[j]]->article_cnt[i + article_sze];
-        }
-#ifdef USE_INT_HASH
+        // for (int j = 0; j < vector_length; ++j) {
+        //     web_weight[j] = freqs[idx[j]]->article_cnt[i + article_sze];
+        // }
+        web_weight = word_count[i];
+        tmp128 = 0;
         for (int finger_bit = 0; finger_bit < finger_length; ++finger_bit) {
-#else
-        for (int finger_bit = finger_length - 1; finger_bit >= 0; --finger_bit) {
-#endif
+            arr_tmp = hash[finger_bit];
             tmp = 0;
             for (int j = 0; j < vector_length; ++j) {
-#ifdef USE_INT_HASH
-                tmp += web_weight[j] * hash[finger_bit][j];
-#else
-                tmp += web_weight[j] * ((hashes[j] >> finger_bit & 1) ? 1 : -1);
-#endif
+                tmp += web_weight[j] * arr_tmp[j];
             }
-            sample_fingers[i] = sample_fingers[i] << 1 | (tmp > 0);
+            tmp128 = tmp128 << 1 | (tmp > 0);
         }
+        sample_fingers[i] = tmp128;
     }
 }
 
@@ -332,6 +350,8 @@ int main(int argc, char *argv[]) {
 
     printf_d("Sorted  Over!\n");
 
+    foo_3_0();
+
     // work out the articles' fingers
     foo_3();
     // ======== read samples ========
@@ -339,7 +359,7 @@ int main(int argc, char *argv[]) {
     foo_4();
 
     // ========  ========
-
+    foo_3_0_0();
     // figure out the samples' fingers
     foo_5();
 
