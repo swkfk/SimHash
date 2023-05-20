@@ -22,15 +22,15 @@ void close_io_handle() {
     handle.pos = 0;
 }
 
-int ask_char() {
-    if (handle.pos == handle.nbyte) {
-        if (handle.nbyte < PATCH_BUF_SZE) {
-            return EOF;
-        }
-        patch_read_();
-    }
-    return handle.buf[handle.pos++];
-}
+// int ask_char() {
+//     // if (handle.pos == handle.nbyte) {
+//     //     // if (handle.nbyte < PATCH_BUF_SZE) {
+//     //     //     return EOF;
+//     //     // }
+//     //     // patch_read_();
+//     // }
+//     return handle.buf[handle.pos++];
+// }
 
 int ask_word(char *out) {
     int chr;
@@ -140,6 +140,7 @@ void flush() {
 void patch_read_() {
     handle.pos = 0;
     handle.nbyte = (int) fread(handle.buf, 1, PATCH_BUF_SZE, handle.stream);
+    handle.buf[handle.nbyte] = EOF;
 }
 
 void patch_write_() {

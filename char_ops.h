@@ -1,6 +1,7 @@
 #ifndef __CHAR_OPS_H__
 #define __CHAR_OPS_H__
 
+#include <ctype.h>
 #include <stdio.h>
 
 #define TODIGIT(c) (0x0f & (c))
@@ -10,6 +11,7 @@
 #define ISUPPER(c) ((c) >= 'A' && (c) <= 'Z')
 #define ISLOWER(c) ((c) >= 'a' && (c) <= 'z')
 #define ISALPHA(c) ((ISLOWER(c)) || (ISUPPER(c)))
+// #define ISALPHA(c) isalpha(c)
 #define ISWHITE(c) ((c) == ' ' || (c) == '\n' || (c) == '\t' || (c) == '\r')
 
 typedef enum { Ok, Ff, Eof } skip_stat_t;

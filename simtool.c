@@ -11,6 +11,7 @@
 // #define DEBUG
 
 #include <assert.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -83,7 +84,7 @@ int buf_sze;
 
 int word_count[ARTICLE_CNT][10000];
 
-int tmp;
+unsigned int tmp;
 unsigned __int128 tmp128;
 FILE *stream;
 
@@ -180,12 +181,13 @@ void foo_3() {
         web_weight = word_count[i];
         tmp128 = 0;
         for (int finger_bit = 0; finger_bit < finger_length; ++finger_bit) {
-            tmp = 0;
+            tmp = 0x80000000u;
             arr_tmp = hash[finger_bit];
-            for (int j = 0; j < vector_length; ++j) {
-                tmp += web_weight[j] * arr_tmp[j];
+            ptrdiff_t diff = web_weight - arr_tmp;
+            for (int *j = arr_tmp; *j; ++j) {
+                tmp += *(j + diff) * *j;
             }
-            tmp128 = tmp128 << 1 | (tmp > 0);
+            tmp128 = tmp128 << 1 | (tmp >> 31); // < 0x80000000u => 1
         }
         article_fingers[i] = tmp128;
     }
@@ -232,11 +234,15 @@ void foo_5() {
         tmp128 = 0;
         for (int finger_bit = 0; finger_bit < finger_length; ++finger_bit) {
             arr_tmp = hash[finger_bit];
-            tmp = 0;
-            for (int j = 0; j < vector_length; ++j) {
-                tmp += web_weight[j] * arr_tmp[j];
+            tmp = 0x80000000u;
+            ptrdiff_t diff = web_weight - arr_tmp;
+            for (int *j = arr_tmp; *j; ++j) {
+                tmp += *(j + diff) * *j;
             }
-            tmp128 = tmp128 << 1 | (tmp > 0);
+            // for (int j = 0; j < vector_length; ++j) {
+            //     tmp += web_weight[j] * arr_tmp[j];
+            // }
+            tmp128 = tmp128 << 1 | (tmp >> 31); // < 0x80000000u => 1
         }
         sample_fingers[i] = tmp128;
     }

@@ -22,7 +22,7 @@ void read_hash_value(int rown, int coln) {
         fgets(buf, 512, stream);
         for (int i = 0; i < coln; ++i) {
 #ifdef USE_INT_HASH
-            hash[i][row] = buf[i] == '1' ? 1 : -1;
+            hash[i][row] = buf[i] == '1' ? -1 : 1;
 #else
             hashes[row] = hashes[row] << 1 | (buf[i] == '1');
 #endif

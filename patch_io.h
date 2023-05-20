@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#define PATCH_BUF_SZE 2097152
+#define PATCH_BUF_SZE 36 * 1024 * 1024
 
 typedef struct {
     FILE *stream;
@@ -17,7 +17,10 @@ void open_read_handle(const char *);
 void open_write_handle(const char *);
 void close_io_handle();
 
-int ask_char();
+// int ask_char();
+
+#define ask_char() (handle.buf[handle.pos++])
+
 int ask_word(char *);
 void read_word();
 int ask_string(char *);
