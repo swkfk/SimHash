@@ -7,12 +7,12 @@
 static patch_io_t handle;
 
 void open_read_handle(const char *file_name) {
-    handle.stream = fopen(file_name, "r");
+    handle.stream = fopen(file_name, "rb");
     patch_read_();
 }
 
 void open_write_handle(const char *file_name) {
-    handle.stream = fopen(file_name, "w");
+    handle.stream = fopen(file_name, "wb");
     handle.pos = 0;
 }
 

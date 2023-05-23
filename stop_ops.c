@@ -6,7 +6,7 @@
 trie_ndoe_t *stop_root;
 
 void read_stop_words() {
-    FILE *stop_in = fopen("stopwords.txt", "r");
+    FILE *stop_in = fopen("stopwords.txt", "rb");
     char *start, *end;
     char buf[4096];
     fread(buf, 1, 4096, stop_in);
