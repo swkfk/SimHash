@@ -3,10 +3,14 @@
 
 #pragma GCC push_options
 
-#pragma GCC optimize("O3")
-#pragma GCC target("popcnt")
+#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
+#pragma GCC target("sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,avx2,popcnt,tune=native")
+#pragma GCC optimize(3, "Ofast", "inline")
 
 #pragma GCC pop_options
+
+#define likely(x) __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
 
 // #define DEBUG
 
@@ -256,6 +260,9 @@ void foo_6() {
         for (art_idx = 0; art_idx < article_sze; ++art_idx) {
             tmp = popcnt_u128(article_fingers[art_idx] ^ sample_fingers[sam_idx]);
             // tmp = hamming(article_fingers[art_idx] ^ sample_fingers[sam_idx], finger_length);
+            if (likely(tmp > 3)) {
+                continue;
+            }
             if (tmp == 0) {
                 hamming_0[hamming_0_sze++] = art_idx;
             } else if (tmp == 1) {
@@ -266,7 +273,7 @@ void foo_6() {
                 hamming_3[hamming_3_sze++] = art_idx;
             }
         }
-        if (!sam_idx) {
+        if (unlikely(!sam_idx)) {
             puts(sample_ids[sam_idx]);
             if (hamming_0_sze) {
                 printf("0:");
