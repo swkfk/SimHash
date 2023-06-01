@@ -1,13 +1,11 @@
 #include "patch_io.h"
 #include <string.h>
 
-#pragma GCC push_options
-
 #pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
-#pragma GCC target("sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,avx2,popcnt,tune=native")
+#pragma GCC target("fma,sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,avx2,popcnt,tune=native")
 #pragma GCC optimize(3, "Ofast", "inline")
 
-#pragma GCC pop_options
+#include <immintrin.h>
 
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
@@ -57,7 +55,7 @@ static inline uint_fast8_t popcnt_u128(__uint128_t n) {
     return cnt_a + cnt_b;
 }
 
-int vector_length, finger_length;
+int vector_length, finger_length, patch_size;
 trie_ndoe_article_t *total_root;
 trie_ndoe_t *sample_root[SAMPLE_CNT];
 
@@ -86,13 +84,16 @@ int hamming_3_sze;
 char buf[WORD_SZE];
 int buf_sze;
 
-int word_count[ARTICLE_CNT][10000];
+int word_count[ARTICLE_CNT][10000] /*__attribute__((__aligned__(32)))*/;
 
 unsigned int tmp;
 unsigned __int128 tmp128;
 FILE *stream;
 
 int skip_ret;
+
+// __m256i avx_a, avx_b, avx_c;
+// int32_t avx_arr[8] __attribute__((__aligned__(32)));
 
 void foo_1() {
     printf_d("Here\n");
@@ -187,10 +188,24 @@ void foo_3() {
         for (int finger_bit = 0; finger_bit < finger_length; ++finger_bit) {
             tmp = 0x80000000u;
             arr_tmp = hash[finger_bit];
-            ptrdiff_t diff = web_weight - arr_tmp;
-            for (int *j = arr_tmp; *j; ++j) {
-                tmp += *(j + diff) * *j;
+            // ptrdiff_t diff = web_weight - arr_tmp;
+            // for (int *j = arr_tmp; *j; ++j) {
+            //     tmp += *(j + diff) * *j;
+            // }
+            for (int i = 0; i < vector_length; ++i) {
+                tmp += arr_tmp[i] * web_weight[i];
             }
+            // avx_c = _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, 0);
+            // for (int i = 0; i < patch_size; ++i) {
+            //     avx_a = _mm256_load_epi32(arr_tmp + i * 8);
+            //     avx_b = _mm256_load_epi32(web_weight + i * 8);
+            //     avx_a = _mm256_mul_epi32(avx_a, avx_b);
+            //     avx_c = _mm256_add_epi32(avx_a, avx_c);
+            // }
+            // _mm256_store_epi32(avx_arr, avx_c);
+            // for (int i = 0; i < 7; ++i) {
+            //     tmp += avx_arr[i];
+            // }
             tmp128 = tmp128 << 1 | (tmp >> 31); // < 0x80000000u => 1
         }
         article_fingers[i] = tmp128;
@@ -239,13 +254,13 @@ void foo_5() {
         for (int finger_bit = 0; finger_bit < finger_length; ++finger_bit) {
             arr_tmp = hash[finger_bit];
             tmp = 0x80000000u;
-            ptrdiff_t diff = web_weight - arr_tmp;
-            for (int *j = arr_tmp; *j; ++j) {
-                tmp += *(j + diff) * *j;
-            }
-            // for (int j = 0; j < vector_length; ++j) {
-            //     tmp += web_weight[j] * arr_tmp[j];
+            // ptrdiff_t diff = web_weight - arr_tmp;
+            // for (int *j = arr_tmp; *j; ++j) {
+            //     tmp += *(j + diff) * *j;
             // }
+            for (int j = 0; j < vector_length; ++j) {
+                tmp += web_weight[j] * arr_tmp[j];
+            }
             tmp128 = tmp128 << 1 | (tmp >> 31); // < 0x80000000u => 1
         }
         sample_fingers[i] = tmp128;
@@ -349,6 +364,7 @@ int main(int argc, char *argv[]) {
     assert(argc == 3);
     vector_length = str_to_int(argv[1]);
     finger_length = str_to_int(argv[2]);
+    patch_size = (finger_length + 3) / 4;
 
     foo_1();
 

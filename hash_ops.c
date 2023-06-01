@@ -4,7 +4,7 @@
 #ifdef USE_INT_HASH
 int hash[128][10000];
 #else
-hash_t hashes[10000];
+hash_t hashes[10000] /*__attribute__((__aligned__(32)))*/;
 #endif
 
 static char buf[512];
