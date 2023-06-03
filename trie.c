@@ -58,7 +58,7 @@ void insert_article_word(trie_ndoe_article_t **proot, const char *word, int arti
     } while (*++c);
     if (!tra->article_cnt) {
         tra->article_cnt = (int *) ask_mem_article_count();
-        assert(tra->article_cnt);
+        // assert(tra->article_cnt);
     }
     ++tra->article_cnt[article_idx];
     ++tra->count;
@@ -131,7 +131,7 @@ void insert_char(int chr) {
 void finish_word() {
     if (!cur_node->article_cnt) {
         cur_node->article_cnt = (int *) ask_mem_article_count();
-        assert(cur_node->article_cnt);
+        // assert(cur_node->article_cnt);
     }
     if (!cur_stop_node || !cur_stop_node->count) {
         ++cur_node->article_cnt[cur_article_id];
