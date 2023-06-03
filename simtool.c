@@ -60,6 +60,7 @@ trie_ndoe_article_t *total_root;
 trie_ndoe_t *sample_root[SAMPLE_CNT];
 
 char article_ids[ARTICLE_CNT][64];
+char *article_starts[ARTICLE_CNT], *article_ends[ARTICLE_CNT];
 int article_sze;
 finger_t article_fingers[ARTICLE_CNT];
 
@@ -112,6 +113,148 @@ void read_stop_and_hash() {
 
     printf_d("start to read articles\n");
 }
+
+// ==== new version start ====
+char article_buf[PATCH_BUF_SZE];
+uint_fast32_t article_len;
+
+typedef struct _TRIE_NODE {
+    uint_fast32_t count;
+    int next[27];
+} array_trie_node_t;
+
+array_trie_node_t trie_tree[50000000];
+uint_fast32_t cur_trie_idx, next_alloc_idx = 1;
+
+void read_stop() {
+    FILE *fp = fopen("./stopwords.txt", "rb");
+    article_buf[fread_unlocked(article_buf, 1, PATCH_BUF_SZE, fp)] = '\n';
+    fclose(fp);
+    register char *c = article_buf;
+    while (*c) {
+        if (*c == '\r')
+            ;
+        else if (*c == '\n') {
+            trie_tree[cur_trie_idx].count = UINT32_MAX;
+            cur_trie_idx = 0;
+        } else {
+            if (!trie_tree[cur_trie_idx].next[TOINDEX(*c)]) {
+                trie_tree[cur_trie_idx].next[TOINDEX(*c)] = next_alloc_idx++;
+            }
+            cur_trie_idx = trie_tree[cur_trie_idx].next[TOINDEX(*c)];
+        }
+    }
+}
+
+void read_whole_articles() {
+    FILE *fp = fopen("./article.txt", "rb");
+    article_len = fread_unlocked(article_buf, 1, PATCH_BUF_SZE, fp);
+    fclose(fp);
+    register char *c = article_buf;
+    register uint_fast32_t tmp_idx;
+    while (*c) {
+        tmp_idx = 0;
+        while (*c != '\r' && *c != '\n') {
+            article_ids[article_sze][tmp_idx] = *(c++);
+        }
+        article_starts[article_sze] = c;
+        ++article_sze;
+
+        for (;;) {
+            if (ISALPHA(*c)) {
+                if (!trie_tree[cur_trie_idx].next[TOINDEX(*c)]) {
+                    trie_tree[cur_trie_idx].next[TOINDEX(*c)] = next_alloc_idx++;
+                }
+                cur_trie_idx = trie_tree[cur_trie_idx].next[TOINDEX(*c)];
+                ++c;
+            } else {
+                if (~trie_tree[cur_trie_idx].count >> 31) {
+                    ++trie_tree[cur_trie_idx].count;
+                    cur_trie_idx = 0;
+                }
+                while (!ISALPHA(*c)) {
+                    if (*c == '\f') {
+                        article_ends[article_sze - 1] = c;
+                        goto end_of_endless_loop;
+                    }
+                    *(c++) = '\0';
+                }
+            }
+        }
+    end_of_endless_loop:;
+    }
+}
+
+typedef struct {
+    uint_fast32_t idx, count;
+} mosts_t;
+mosts_t mosts[1048576];
+uint_fast32_t word_sze;
+uint_fast32_t stack[1048576];
+uint_fast32_t stack_sze;
+
+void walk_trie() {
+    // for (int i = 1; i < next_alloc_idx; ++i) {
+    //     // plus 1 is important
+    //     if (trie_tree[i].count + 1 > 1) {
+    //         mosts[word_sze].idx = i;
+    //         mosts[word_sze].count = trie_tree[i].count;
+    //         ++word_sze;
+    //     }
+    // }
+    uint32_t root;
+    stack[stack_sze++] = 0;
+    while (stack_sze) {
+        root = stack[--stack_sze];
+        if (trie_tree[root].count > 0) {
+            mosts[word_sze].idx = root;
+            mosts[word_sze].count = trie_tree[root].count;
+        }
+        for (register int i = 26; i >= 1; --i) {
+            if (trie_tree[root].next[i]) {
+                stack[stack_sze++] = trie_tree[root].next[i];
+            }
+        }
+    }
+}
+
+int cmp(const void *a, const void *b) {
+    // return memcmp(&(((mosts_t *) a)->count), &(((mosts_t *) b)->count), sizeof(uint_fast32_t));
+    return ((mosts_t *) a)->count > ((mosts_t *) b)->count ? 1 : -1; // ==: -1, no swap
+}
+
+// uint_fast32_t count_1[10005], count_2[10005];
+// uint_fast32_t *count_ptr[] = {count_1, count_2};
+// uint_fast8_t count_cur = 1, count_last = 0;
+// uint_fast32_t *cptr_cur, *cptr_last;
+
+void get_article_features() {
+    for (register int j = 0; j < vector_length; ++j) {
+        trie_tree[mosts[j].idx].count = 0;
+    }
+    for (int i = 0; i < article_sze; ++i) {
+        // cptr_cur = count_ptr[(count_cur++) & 1];
+        // cptr_last = count_ptr[(count_last++) & 1];
+        register char *c = article_starts[i], *tend = article_ends[i];
+        while (c < tend) {
+            if (*c) {
+                cur_trie_idx = trie_tree[cur_trie_idx].next[TOINDEX(*c)];
+                ++c;
+            } else {
+                while (!*(++c))
+                    ;
+                ++trie_tree[cur_trie_idx].count;
+                cur_trie_idx = 0;
+            }
+        }
+        for (register int j = 0; j < vector_length; ++j) {
+            // word_count[i][j] = cptr_cur[j] - cptr_last[j];
+            word_count[i][j] = trie_tree[mosts[j].idx].count;
+            trie_tree[mosts[j].idx].count = 0;
+        }
+    }
+}
+// ==== new version end ====
 
 void read_articles() {
     open_read_handle("article.txt");
