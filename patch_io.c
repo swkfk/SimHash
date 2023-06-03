@@ -49,7 +49,8 @@ int ask_word(char *out) {
 
 void read_word() {
     int chr;
-    while (chr = ask_char(), ISALPHA(chr)) {
+    // ISALPHA will use the `isalpha` function
+    while (ISALPHA(chr = ask_char())) {
         insert_char(chr);
     }
     finish_word();
@@ -73,9 +74,9 @@ int ask_string(char *out) {
     }
 }
 
-void un_char(int c) {
-    handle.buf[--handle.pos] = (char) c;
-}
+// void un_char(int c) {
+//     handle.buf[--handle.pos] = (char) c;
+// }
 
 int skip_white() {
     int chr;

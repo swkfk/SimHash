@@ -118,9 +118,10 @@ void new_article(int art_idx, trie_ndoe_article_t **proot) {
 void insert_char(int chr) {
     char_idx = TOINDEX(chr);
     if (!cur_node->next[char_idx]) {
-        cur_node->next[char_idx] = new_tire_article_node();
+        cur_node = cur_node->next[char_idx] = new_tire_article_node();
+    } else {
+        cur_node = cur_node->next[char_idx];
     }
-    cur_node = cur_node->next[char_idx];
     // if (cur_stop_node && cur_stop_node->next[char_idx]) {
     //     cur_stop_node = cur_stop_node->next[char_idx];
     // } else {

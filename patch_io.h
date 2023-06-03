@@ -24,7 +24,8 @@ void close_io_handle();
 int ask_word(char *);
 void read_word();
 int ask_string(char *);
-void un_char(int);
+// void un_char(int);
+#define un_char(...) (--handle.pos)
 
 int skip_white();
 int skip_noalpha();
