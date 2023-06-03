@@ -19,9 +19,9 @@ void insert_word(trie_ndoe_t **, const char *);
 int find_word(trie_ndoe_t *, const char *);
 
 trie_ndoe_article_t *new_tire_article_node();
-void insert_article_word(trie_ndoe_article_t **, const char *, int);
-int find_word_in_article_whole(trie_ndoe_article_t *, const char *);
-int find_word_in_article_single(trie_ndoe_article_t *, const char *, int);
+// void insert_article_word(trie_ndoe_article_t **, const char *, int);
+// int find_word_in_article_whole(trie_ndoe_article_t *, const char *);
+// int find_word_in_article_single(trie_ndoe_article_t *, const char *, int);
 
 void new_article(int, trie_ndoe_article_t **);
 void insert_char(int);

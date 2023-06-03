@@ -50,7 +50,7 @@ int ask_word(char *out) {
 void read_word() {
     int chr;
     // ISALPHA will use the `isalpha` function
-    while (ISALPHA(chr = ask_char())) {
+    while (chr = ask_char(), ISALPHA(chr)) {
         insert_char(chr);
     }
     finish_word();
@@ -115,17 +115,17 @@ void println(const char *s) {
 void prints(const char *s) {
     while (*s) {
         handle.buf[handle.pos++] = *(s++);
-        if (handle.pos == PATCH_BUF_SZE) {
-            patch_write_();
-        }
+        // if (handle.pos == PATCH_BUF_SZE) {
+        //     patch_write_();
+        // }
     }
 }
 
 void printc(const char c) {
     handle.buf[handle.pos++] = c;
-    if (handle.pos == PATCH_BUF_SZE) {
-        patch_write_();
-    }
+    // if (handle.pos == PATCH_BUF_SZE) {
+    //     patch_write_();
+    // }
 }
 
 void endl() {
@@ -140,11 +140,11 @@ void flush() {
 
 void patch_read_() {
     handle.pos = 0;
-    handle.nbyte = (int) fread(handle.buf, 1, PATCH_BUF_SZE, handle.stream);
+    handle.nbyte = (int) fread_unlocked(handle.buf, 1, PATCH_BUF_SZE, handle.stream);
     handle.buf[handle.nbyte] = EOF;
 }
 
 void patch_write_() {
-    fwrite(handle.buf, 1, handle.pos, handle.stream);
+    fwrite_unlocked(handle.buf, 1, handle.pos, handle.stream);
     handle.pos = 0;
 }

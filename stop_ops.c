@@ -27,6 +27,6 @@ void read_stop_words() {
     fclose(stop_in);
 }
 
-int is_stop_word(const char *s) {
-    return find_word(stop_root, s);
-}
+// int is_stop_word(const char *s) {
+//     return find_word(stop_root, s);
+// }
