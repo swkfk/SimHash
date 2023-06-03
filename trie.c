@@ -104,7 +104,7 @@ int find_word_in_article_single(trie_ndoe_article_t *root, const char *word, int
 
 int cur_article_id, char_idx;
 trie_ndoe_article_t *cur_node, *cur_root;
-trie_ndoe_t *cur_stop_node, *cur_stop_root;
+// trie_ndoe_t *cur_stop_node, *cur_stop_root;
 
 void new_article(int art_idx, trie_ndoe_article_t **proot) {
     if (*proot == NULL) {
@@ -112,7 +112,7 @@ void new_article(int art_idx, trie_ndoe_article_t **proot) {
     }
     cur_article_id = art_idx;
     cur_root = cur_node = *proot;
-    cur_stop_root = cur_stop_node = stop_root;
+    // cur_stop_root = cur_stop_node = stop_root;
 }
 
 void insert_char(int chr) {
@@ -121,22 +121,39 @@ void insert_char(int chr) {
         cur_node->next[char_idx] = new_tire_article_node();
     }
     cur_node = cur_node->next[char_idx];
-    if (cur_stop_node && cur_stop_node->next[char_idx]) {
-        cur_stop_node = cur_stop_node->next[char_idx];
-    } else {
-        cur_stop_node = NULL;
-    }
+    // if (cur_stop_node && cur_stop_node->next[char_idx]) {
+    //     cur_stop_node = cur_stop_node->next[char_idx];
+    // } else {
+    //     cur_stop_node = NULL;
+    // }
 }
 
 void finish_word() {
+    if (cur_node->count == -1) {
+        cur_node = cur_root;
+        return;
+    }
     if (!cur_node->article_cnt) {
         cur_node->article_cnt = (int *) ask_mem_article_count();
         // assert(cur_node->article_cnt);
     }
-    if (!cur_stop_node || !cur_stop_node->count) {
-        ++cur_node->article_cnt[cur_article_id];
-        ++cur_node->count;
-    }
+    // if (!cur_stop_node || !cur_stop_node->count) {
+    ++cur_node->article_cnt[cur_article_id];
+    ++cur_node->count;
+    // }
     cur_node = cur_root;
-    cur_stop_node = cur_stop_root;
+    // cur_stop_node = cur_stop_root;
+}
+
+void finish_stop() {
+    if (!cur_node->article_cnt) {
+        cur_node->article_cnt = (int *) ask_mem_article_count();
+        // assert(cur_node->article_cnt);
+    }
+    // if (!cur_stop_node || !cur_stop_node->count) {
+    // ++cur_node->article_cnt[cur_article_id];
+    cur_node->count = -1;
+    // }
+    cur_node = cur_root;
+    // cur_stop_node = cur_stop_root;
 }

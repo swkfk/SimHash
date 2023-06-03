@@ -26,6 +26,7 @@ int find_word_in_article_single(trie_ndoe_article_t *, const char *, int);
 void new_article(int, trie_ndoe_article_t **);
 void insert_char(int);
 void finish_word();
+void finish_stop();
 
 extern const size_t sze_node;
 extern const size_t sze_article;

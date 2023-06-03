@@ -87,7 +87,7 @@ void stack_preorder(trie_ndoe_article_t *root) {
     stack[stack_sze++] = root;
     while (stack_sze) {
         root = stack[--stack_sze];
-        if (root->count) {
+        if (root->count && ~root->count) {
             idx[freq_sze] = freq_sze;
             freqs[freq_sze++] = root;
         }

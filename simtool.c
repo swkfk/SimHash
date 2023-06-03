@@ -97,8 +97,11 @@ int skip_ret;
 
 void foo_1() {
     printf_d("Here\n");
+    // new_pool(sze_node, &pool);
+    new_pool(sze_article, &pool);
+    new_pool(sze_article_count, &pool_article);
 
-    new_pool(sze_node, &pool);
+    new_article(-1, &total_root);
     read_stop_words();
     printf_d("Rear stop words over!\n");
 
@@ -106,9 +109,6 @@ void foo_1() {
     printf_d("Rear hashes over!\n");
 
     printf_d("Before new_pool\n");
-
-    new_pool(sze_article, &pool);
-    new_pool(sze_article_count, &pool_article);
 
     printf_d("start to read articles\n");
 }
@@ -156,6 +156,13 @@ EndOfReadArticle:
 int *arr_tmp;
 
 void foo_3_0() {
+    int head = 0, tail = 0;
+    while (head < vector_length) {
+        while (/*printf("%d => %d\n", tail, freqs[idx[tail]]->count), */ -1 == freqs[idx[tail]]->count) {
+            ++tail;
+        }
+        idx[head++] = idx[tail++];
+    }
     for (int j = 0; j < vector_length; ++j) {
         arr_tmp = freqs[idx[j]]->article_cnt;
         for (int i = 0; i < article_sze; ++i) {
@@ -163,6 +170,9 @@ void foo_3_0() {
         }
         // memcpy(word_count[j], arr_tmp, sizeof(int) * article_sze);
     }
+    // for (int j = 0; j < vector_length; ++j) {
+    //     printf("%d\n", word_count[0][j]);
+    // }
 }
 
 void foo_3_0_0() {
