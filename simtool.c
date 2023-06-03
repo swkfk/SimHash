@@ -95,7 +95,7 @@ int skip_ret;
 // __m256i avx_a, avx_b, avx_c;
 // int32_t avx_arr[8] __attribute__((__aligned__(32)));
 
-void foo_1() {
+void read_stop_and_hash() {
     printf_d("Here\n");
     // new_pool(sze_node, &pool);
     new_pool(sze_article, &pool);
@@ -113,7 +113,7 @@ void foo_1() {
     printf_d("start to read articles\n");
 }
 
-void foo_2() {
+void read_articles() {
     open_read_handle("article.txt");
     for (;;) {
         // read the article id
@@ -155,14 +155,14 @@ EndOfReadArticle:
 
 int *arr_tmp;
 
-void foo_3_0() {
-    int head = 0, tail = 0;
-    while (head < vector_length) {
-        while (/*printf("%d => %d\n", tail, freqs[idx[tail]]->count), */ -1 == freqs[idx[tail]]->count) {
-            ++tail;
-        }
-        idx[head++] = idx[tail++];
-    }
+void get_features() {
+    // int head = 0, tail = 0;
+    // while (head < vector_length) {
+    //     while (/*printf("%d => %d\n", tail, freqs[idx[tail]]->count), */ -1 == freqs[idx[tail]]->count) {
+    //         ++tail;
+    //     }
+    //     idx[head++] = idx[tail++];
+    // }
     for (int j = 0; j < vector_length; ++j) {
         arr_tmp = freqs[idx[j]]->article_cnt;
         for (int i = 0; i < article_sze; ++i) {
@@ -175,7 +175,7 @@ void foo_3_0() {
     // }
 }
 
-void foo_3_0_0() {
+void get_features_sample() {
     for (int j = 0; j < vector_length; ++j) {
         arr_tmp = freqs[idx[j]]->article_cnt;
         for (int i = 0; i < sample_sze; ++i) {
@@ -184,11 +184,11 @@ void foo_3_0_0() {
     }
 }
 
-void foo_3_1(int i, int j) {
+void unused_foo_3_1(int i, int j) {
     web_weight[j] = freqs[idx[j]]->article_cnt[i];
 }
 
-void foo_3() {
+void calculate_finger() {
     for (int i = 0; i < article_sze; ++i) {
         // for (int j = 0; j < vector_length; ++j) {
         //     // foo_3_1(i, j);
@@ -222,7 +222,7 @@ void foo_3() {
     }
 }
 
-void foo_4() {
+void read_samples() {
     open_read_handle("sample.txt");
     for (;;) {
         // read the sample id
@@ -254,7 +254,7 @@ EndOfReadSample:
     close_io_handle();
 }
 
-void foo_5() {
+void calculate_finger_sample() {
     for (int i = 0; i < sample_sze; ++i) {
         // for (int j = 0; j < vector_length; ++j) {
         //     web_weight[j] = freqs[idx[j]]->article_cnt[i + article_sze];
@@ -277,7 +277,7 @@ void foo_5() {
     }
 }
 
-void foo_6() {
+void emit_results() {
     open_write_handle("result.txt");
     int art_idx;
     for (int sam_idx = 0; sam_idx < sample_sze; ++sam_idx) {
@@ -376,11 +376,11 @@ int main(int argc, char *argv[]) {
     finger_length = str_to_int(argv[2]);
     patch_size = (finger_length + 3) / 4;
 
-    foo_1();
+    read_stop_and_hash();
 
     // ======== read articles ========
 
-    foo_2();
+    read_articles();
 
     // ========  ========
 
@@ -389,22 +389,22 @@ int main(int argc, char *argv[]) {
 
     printf_d("Sorted  Over!\n");
 
-    foo_3_0();
+    get_features();
 
     // work out the articles' fingers
-    foo_3();
+    calculate_finger();
     // ======== read samples ========
     // new_pool(sze_node);
-    foo_4();
+    read_samples();
 
     // ========  ========
-    foo_3_0_0();
+    get_features_sample();
     // figure out the samples' fingers
-    foo_5();
+    calculate_finger_sample();
 
     // cmp the fingers
     // I promise that I would make them more graceful!!!
-    foo_6();
+    emit_results();
 
     return 0;
 }
