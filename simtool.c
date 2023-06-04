@@ -237,5 +237,7 @@ EndOfReadSample:
     }
     fclose(stream);
 
+    printf("WARNING: In Debug Mode!!!\n");
+
     return 0;
 }

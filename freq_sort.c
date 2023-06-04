@@ -18,6 +18,11 @@ int freq_cmp(const void *pa, const void *pb) {
 void get_sorted_feature(tire_ndoe_t *root) {
     walk_tire_tree(root);
     qsort(freqs, freq_sze, sizeof(freq_t), freq_cmp);
+    FILE *fp = fopen("./feature.old.txt", "w");
+    for (int i = 0; i < 1000; ++i) {
+        fprintf(fp, "%s %d\n", freqs[i].word, freqs[i].freq);
+    }
+    fclose(fp);
 }
 
 static char buf[4096];
