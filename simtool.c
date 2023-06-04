@@ -247,7 +247,7 @@ void print_trie(int root) {
     if (root) {
         for (int j = 0; j < vector_length; ++j) {
             if (mosts[j].idx == root) {
-                // printf("%s %lu\n", print_trie_buf_, mosts[j].count);
+                printf("%s %lu\n", print_trie_buf_, mosts[j].count);
                 words_[print_word_sze_].count = mosts[j].count;
                 strcpy(words_[print_word_sze_].word, print_trie_buf_);
                 ++print_word_sze_;
@@ -268,10 +268,13 @@ int word_cmp_(const void *a, const void *b) {
 }
 
 void print_trie_result() {
+    // printf("print_word_sze_: %d\n", print_word_sze_);
     qsort(words_, print_word_sze_, sizeof(word_t_), word_cmp_);
+    FILE *fp = fopen("./feature.new.txt", "w");
     for (int i = 0; i < print_word_sze_; ++i) {
-        printf("%s %d\n", words_[i].word, words_[i].count);
+        fprintf(fp, "%s %d\n", words_[i].word, words_[i].count);
     }
+    fclose(fp);
 }
 
 #else
