@@ -1,9 +1,7 @@
-// #include "patch_io.h"
-#include <string.h>
 
-// #pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
-// #pragma GCC target("fma,sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,avx2,popcnt,tune=native")
-// #pragma GCC optimize(3, "Ofast", "inline")
+#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
+#pragma GCC target("fma,sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,avx2,popcnt,tune=native")
+#pragma GCC optimize(3, "Ofast", "inline")
 
 #include <immintrin.h>
 
@@ -16,15 +14,12 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "char_ops.h"
 #include "consts.h"
-// #include "freq_sort.h"
 #include "hash_ops.h"
-// #include "mempool.h"
-// #include "patch_io.h"
-// #include "stop_ops.h"
-// #include "trie.h"
+#include "patch_io.h"
 
 #ifdef DEBUG
 #define printf_d printf
@@ -72,7 +67,6 @@ finger_t sample_fingers[ARTICLE_CNT];
 int *web_weight;
 
 // the distance for each sample
-// I promise that I would make them more graceful!!!
 int hamming_0[ARTICLE_CNT];
 int hamming_0_sze;
 int hamming_1[ARTICLE_CNT];
@@ -96,41 +90,19 @@ int skip_ret;
 // __m256i avx_a, avx_b, avx_c;
 // int32_t avx_arr[8] __attribute__((__aligned__(32)));
 
-// void read_stop_and_hash() {
-//     printf_d("Here\n");
-//     // new_pool(sze_node, &pool);
-//     new_pool(sze_article, &pool);
-//     new_pool(sze_article_count, &pool_article);
-
-//     new_article(-1, &total_root);
-//     read_stop_words();
-//     printf_d("Rear stop words over!\n");
-
-//     read_hash_value(vector_length, finger_length);
-//     printf_d("Rear hashes over!\n");
-
-//     printf_d("Before new_pool\n");
-
-//     printf_d("start to read articles\n");
-// }
-
-// ==== new version start ====
-char article_buf[PATCH_BUF_SZE];
-uint_fast32_t article_len;
-
 typedef struct _TRIE_NODE {
     uint_fast32_t count;
     int next[27];
 } array_trie_node_t;
 
-array_trie_node_t trie_tree[10000000];
+array_trie_node_t trie_tree[1000000];
 uint_fast32_t cur_trie_idx, next_alloc_idx = 1;
 
 void read_stop() {
     FILE *fp = fopen("./stopwords.txt", "rb");
-    article_buf[fread_unlocked(article_buf, 1, PATCH_BUF_SZE, fp)] = '\n';
+    passage_buf[fread_unlocked(passage_buf, 1, PATCH_BUF_SZE, fp)] = '\n';
     fclose(fp);
-    register char *c = article_buf;
+    register char *c = passage_buf;
     while (*c) {
         if (*c == '\r')
             ;
@@ -153,13 +125,16 @@ void read_stop() {
 
 void read_whole_articles() {
     FILE *fp = fopen("./article.txt", "rb");
-    article_len = fread_unlocked(article_buf, 1, PATCH_BUF_SZE, fp);
+    passage_len = fread_unlocked(passage_buf, 1, PATCH_BUF_SZE, fp);
     fclose(fp);
-    register char *c = article_buf;
+    register char *c = passage_buf;
     register uint_fast32_t tmp_idx;
     while (*c) {
         while (*c == '\f' || *c == '\r' || *c == '\n') {
             ++c;
+        }
+        if (passage_len == c - passage_buf) {
+            break;
         }
         tmp_idx = 0;
         while (*c != '\r' && *c != '\n') {
@@ -226,6 +201,9 @@ void walk_trie() {
             }
         }
     }
+    // printf("%lu %lu\n", mosts[0].count, mosts[0].idx);
+    // exit(0);
+    mosts[0].count = 0;
     // for (int i = 0; i < vector_length; ++i) {
     //     printf("%lu ", mosts[i].count);
     // }
@@ -247,12 +225,18 @@ void print_trie(int root) {
     if (root) {
         for (int j = 0; j < vector_length; ++j) {
             if (mosts[j].idx == root) {
-                printf("%s %lu\n", print_trie_buf_, mosts[j].count);
+                printf("#%3d: %s %lu\n", print_word_sze_ + 1, print_trie_buf_, mosts[j].count);
                 words_[print_word_sze_].count = mosts[j].count;
                 strcpy(words_[print_word_sze_].word, print_trie_buf_);
                 ++print_word_sze_;
             }
         }
+#ifdef DEBUG_CATCH_FREQ_1000
+        if (trie_tree[root].count == 1000) {
+            printf("Caught 1000! `%s`\n", print_trie_buf_);
+            exit(0);
+        }
+#endif
     }
     for (int i = 1; i <= 26; ++i) {
         if (trie_tree[root].next[i]) {
@@ -268,13 +252,20 @@ int word_cmp_(const void *a, const void *b) {
 }
 
 void print_trie_result() {
-    // printf("print_word_sze_: %d\n", print_word_sze_);
+    printf("print_word_sze_: %d\n", print_word_sze_);
     qsort(words_, print_word_sze_, sizeof(word_t_), word_cmp_);
     FILE *fp = fopen("./feature.new.txt", "w");
     for (int i = 0; i < print_word_sze_; ++i) {
         fprintf(fp, "%s %d\n", words_[i].word, words_[i].count);
     }
     fclose(fp);
+    int idx = trie_tree[0].next[TOINDEX('l')];
+    idx = trie_tree[idx].next[TOINDEX('o')];
+    idx = trie_tree[idx].next[TOINDEX('o')];
+    idx = trie_tree[idx].next[TOINDEX('k')];
+    idx = trie_tree[idx].next[TOINDEX('e')];
+    idx = trie_tree[idx].next[TOINDEX('d')];
+    printf("*** looked: %lu***\n", trie_tree[idx].count);
 }
 
 #else
@@ -301,6 +292,11 @@ void get_article_features() {
     //     printf("%lu ", mosts[i].count);
     // }
     // printf("\n");
+#ifdef DEBUG_PRINT_MOST_FREQS
+    for (int i = 0; i < vector_length; ++i) {
+        printf("Most freqs: #%3d: %lu\n", i + 1, mosts[i].count);
+    }
+#endif
     for (register int j = 0; j < vector_length; ++j) {
         trie_tree[mosts[j].idx].count = 0;
     }
@@ -326,97 +322,16 @@ void get_article_features() {
         }
     }
 }
-// ==== new version end ====
-
-// void read_articles() {
-//     open_read_handle("article.txt");
-//     for (;;) {
-//         // read the article id
-//         if (ask_string(article_ids[article_sze++]) == EOF) {
-//             --article_sze;
-//             break;
-//         }
-//         printf_d("article: %05d\n", article_sze);
-//         // read the words in the article
-//         new_article(article_sze - 1, &total_root);
-//         for (;;) {
-//             (void) skip_noalpha();
-//             printf_d("<read word>\n");
-//             // ask_word(buf);
-//             read_word();
-//             printf_d("</read word>\n");
-//             // printf("In main loop: Tag 02: %s\n", buf);
-//             skip_ret = skip_noalpha();
-//             // if (!is_stop_word(buf)) {
-//             //     printf_d("<Read %s>\n", buf);
-//             //     insert_article_word(&total_root, buf, article_sze - 1);
-//             //     printf_d("</Read>\n");
-//             // }
-//             if (skip_ret == -1) {
-//                 // EOF
-//                 goto EndOfReadArticle;
-//             }
-//             if (skip_ret == 1) {
-//                 // '\f'
-//                 break;
-//             }
-//         }
-//     }
-// EndOfReadArticle:
-//     close_io_handle();
-
-//     printf_d("read articles over!\n");
-// }
 
 int *arr_tmp;
 
-// void get_features() {
-//     // int head = 0, tail = 0;
-//     // while (head < vector_length) {
-//     //     while (/*printf("%d => %d\n", tail, freqs[idx[tail]]->count), */ -1 == freqs[idx[tail]]->count) {
-//     //         ++tail;
-//     //     }
-//     //     idx[head++] = idx[tail++];
-//     // }
-//     for (int j = 0; j < vector_length; ++j) {
-//         arr_tmp = freqs[idx[j]]->article_cnt;
-//         for (int i = 0; i < article_sze; ++i) {
-//             word_count[i][j] = arr_tmp[i];
-//         }
-//         // memcpy(word_count[j], arr_tmp, sizeof(int) * article_sze);
-//     }
-//     // for (int j = 0; j < vector_length; ++j) {
-//     //     printf("%d\n", word_count[0][j]);
-//     // }
-// }
-
-// void get_features_sample() {
-//     for (int j = 0; j < vector_length; ++j) {
-//         arr_tmp = freqs[idx[j]]->article_cnt;
-//         for (int i = 0; i < sample_sze; ++i) {
-//             word_count[i][j] = arr_tmp[i + article_sze];
-//         }
-//     }
-// }
-
-// void unused_foo_3_1(int i, int j) {
-//     web_weight[j] = freqs[idx[j]]->article_cnt[i];
-// }
-
 void calculate_finger() {
     for (int i = 0; i < article_sze; ++i) {
-        // for (int j = 0; j < vector_length; ++j) {
-        //     // foo_3_1(i, j);
-        // }
         web_weight = word_count[i];
         tmp128 = 0;
         for (int finger_bit = 0; finger_bit < finger_length; ++finger_bit) {
             tmp = 0x80000000u;
             arr_tmp = hash[finger_bit];
-            // ptrdiff_t diff = web_weight - arr_tmp;
-            // for (int *j = arr_tmp; *j; ++j) {
-            //     tmp += *(j + diff) * *j;
-            // }
             for (int i = 0; i < vector_length; ++i) {
                 tmp += arr_tmp[i] * web_weight[i];
             }
@@ -437,52 +352,66 @@ void calculate_finger() {
     }
 }
 
-// void read_samples() {
-//     open_read_handle("sample.txt");
-//     for (;;) {
-//         // read the sample id
-//         if (ask_string(sample_ids[sample_sze++]) == EOF) {
-//             --sample_sze;
-//             break;
-//         }
-//         // read the words in the article
-//         new_article(article_sze + sample_sze - 1, &total_root);
-//         for (;;) {
-//             (void) skip_noalpha();
-//             // ask_word(buf);
-//             read_word();
-//             skip_ret = skip_noalpha();
-//             // if (!is_stop_word(buf)) {
-//             //     insert_article_word(&total_root, buf, article_sze + sample_sze - 1);
-//             // }
-//             if (skip_ret == -1) {
-//                 // EOF
-//                 goto EndOfReadSample;
-//             }
-//             if (skip_ret == 1) {
-//                 // '\f'
-//                 break;
-//             }
-//         }
-//     }
-// EndOfReadSample:
-//     close_io_handle();
-// }
+void read_whole_samples() {
+    FILE *fp = fopen("./sample.txt", "rb");
+    passage_len = fread(passage_buf, 1, PATCH_BUF_SZE - 1, fp);
+    fclose(fp);
+    register char *c = passage_buf;
+    register uint_fast32_t tmp_idx;
+    while (*c) {
+        while (*c == '\f' || *c == '\r' || *c == '\n') {
+#ifdef DEBUG_PRINT_SAMPLE_INFO
+            printf("At begin, read `%c`, sze: %d, next: [%c]\n", *c, sample_sze, *(c + 1));
+#endif
+            ++c;
+        }
+        if (passage_len == c - passage_buf) {
+            break;
+        }
+        tmp_idx = 0;
+        while (*c != '\r' && *c != '\n') {
+            sample_ids[sample_sze][tmp_idx++] = *(c++);
+        }
+        ++sample_sze;
+
+        for (;;) {
+            if (ISALPHA(*c)) {
+                if (!trie_tree[cur_trie_idx].next[TOINDEX(*c)]) {
+                    trie_tree[cur_trie_idx].next[TOINDEX(*c)] = next_alloc_idx++;
+                }
+                cur_trie_idx = trie_tree[cur_trie_idx].next[TOINDEX(*c)];
+                ++c;
+            } else {
+                ++trie_tree[cur_trie_idx].count;
+                cur_trie_idx = 0;
+                while (!ISALPHA(*c)) {
+                    if (*c == '\f' || !*c) {
+#ifdef DEBUG_PRINT_SAMPLE_INFO
+                        printf("Jump into! Name: %s\n", sample_ids[sample_sze - 1]);
+#endif
+                        goto end_of_endless_loop_sample;
+                    }
+                    // *(c++) = '\0';
+                    ++c;
+                }
+            }
+        }
+    end_of_endless_loop_sample:
+        arr_tmp = word_count[sample_sze - 1];
+        for (register int j = 0; j < vector_length; ++j) {
+            arr_tmp[j] = trie_tree[mosts[j].idx].count;
+            trie_tree[mosts[j].idx].count = 0;
+        }
+    }
+}
 
 void calculate_finger_sample() {
     for (int i = 0; i < sample_sze; ++i) {
-        // for (int j = 0; j < vector_length; ++j) {
-        //     web_weight[j] = freqs[idx[j]]->article_cnt[i + article_sze];
-        // }
         web_weight = word_count[i];
         tmp128 = 0;
         for (int finger_bit = 0; finger_bit < finger_length; ++finger_bit) {
             arr_tmp = hash[finger_bit];
             tmp = 0x80000000u;
-            // ptrdiff_t diff = web_weight - arr_tmp;
-            // for (int *j = arr_tmp; *j; ++j) {
-            //     tmp += *(j + diff) * *j;
-            // }
             for (int j = 0; j < vector_length; ++j) {
                 tmp += web_weight[j] * arr_tmp[j];
             }
@@ -492,95 +421,94 @@ void calculate_finger_sample() {
     }
 }
 
-// void emit_results() {
-//     open_write_handle("result.txt");
-//     int art_idx;
-//     for (int sam_idx = 0; sam_idx < sample_sze; ++sam_idx) {
-//         hamming_0_sze = hamming_1_sze = hamming_2_sze = hamming_3_sze = 0;
-//         for (art_idx = 0; art_idx < article_sze; ++art_idx) {
-//             tmp = popcnt_u128(article_fingers[art_idx] ^ sample_fingers[sam_idx]);
-//             // tmp = hamming(article_fingers[art_idx] ^ sample_fingers[sam_idx], finger_length);
-//             if (likely(tmp > 3)) {
-//                 continue;
-//             }
-//             if (tmp == 0) {
-//                 hamming_0[hamming_0_sze++] = art_idx;
-//             } else if (tmp == 1) {
-//                 hamming_1[hamming_1_sze++] = art_idx;
-//             } else if (tmp == 2) {
-//                 hamming_2[hamming_2_sze++] = art_idx;
-//             } else if (tmp == 3) {
-//                 hamming_3[hamming_3_sze++] = art_idx;
-//             }
-//         }
-//         if (unlikely(!sam_idx)) {
-//             puts(sample_ids[sam_idx]);
-//             if (hamming_0_sze) {
-//                 printf("0:");
-//                 for (int i = 0; i < hamming_0_sze; ++i) {
-//                     printf("%s ", article_ids[hamming_0[i]]);
-//                 }
-//                 putchar('\n');
-//             }
-//             if (hamming_1_sze) {
-//                 printf("1:");
-//                 for (int i = 0; i < hamming_1_sze; ++i) {
-//                     printf("%s ", article_ids[hamming_1[i]]);
-//                 }
-//                 putchar('\n');
-//             }
-//             if (hamming_2_sze) {
-//                 printf("2:");
-//                 for (int i = 0; i < hamming_2_sze; ++i) {
-//                     printf("%s ", article_ids[hamming_2[i]]);
-//                 }
-//                 putchar('\n');
-//             }
-//             if (hamming_3_sze) {
-//                 printf("3:");
-//                 for (int i = 0; i < hamming_3_sze; ++i) {
-//                     printf("%s ", article_ids[hamming_3[i]]);
-//                 }
-//                 putchar('\n');
-//             }
-//         }
-//         println(sample_ids[sam_idx]);
-//         if (hamming_0_sze) {
-//             prints("0:");
-//             for (int i = 0; i < hamming_0_sze; ++i) {
-//                 prints(article_ids[hamming_0[i]]);
-//                 printc(' ');
-//             }
-//             endl();
-//         }
-//         if (hamming_1_sze) {
-//             prints("1:");
-//             for (int i = 0; i < hamming_1_sze; ++i) {
-//                 prints(article_ids[hamming_1[i]]);
-//                 printc(' ');
-//             }
-//             endl();
-//         }
-//         if (hamming_2_sze) {
-//             prints("2:");
-//             for (int i = 0; i < hamming_2_sze; ++i) {
-//                 prints(article_ids[hamming_2[i]]);
-//                 printc(' ');
-//             }
-//             endl();
-//         }
-//         if (hamming_3_sze) {
-//             prints("3:");
-//             for (int i = 0; i < hamming_3_sze; ++i) {
-//                 prints(article_ids[hamming_3[i]]);
-//                 printc(' ');
-//             }
-//             endl();
-//         }
-//     }
-//     flush();
-//     close_io_handle();
-// }
+void emit_results() {
+    open_write_handle("result.txt");
+    int art_idx;
+    for (int sam_idx = 0; sam_idx < sample_sze; ++sam_idx) {
+        hamming_0_sze = hamming_1_sze = hamming_2_sze = hamming_3_sze = 0;
+        for (art_idx = 0; art_idx < article_sze; ++art_idx) {
+            tmp = popcnt_u128(article_fingers[art_idx] ^ sample_fingers[sam_idx]);
+            if (likely(tmp > 3)) {
+                continue;
+            }
+            if (tmp == 0) {
+                hamming_0[hamming_0_sze++] = art_idx;
+            } else if (tmp == 1) {
+                hamming_1[hamming_1_sze++] = art_idx;
+            } else if (tmp == 2) {
+                hamming_2[hamming_2_sze++] = art_idx;
+            } else if (tmp == 3) {
+                hamming_3[hamming_3_sze++] = art_idx;
+            }
+        }
+        if (unlikely(!sam_idx)) {
+            puts(sample_ids[sam_idx]);
+            if (hamming_0_sze) {
+                printf("0:");
+                for (int i = 0; i < hamming_0_sze; ++i) {
+                    printf("%s ", article_ids[hamming_0[i]]);
+                }
+                putchar('\n');
+            }
+            if (hamming_1_sze) {
+                printf("1:");
+                for (int i = 0; i < hamming_1_sze; ++i) {
+                    printf("%s ", article_ids[hamming_1[i]]);
+                }
+                putchar('\n');
+            }
+            if (hamming_2_sze) {
+                printf("2:");
+                for (int i = 0; i < hamming_2_sze; ++i) {
+                    printf("%s ", article_ids[hamming_2[i]]);
+                }
+                putchar('\n');
+            }
+            if (hamming_3_sze) {
+                printf("3:");
+                for (int i = 0; i < hamming_3_sze; ++i) {
+                    printf("%s ", article_ids[hamming_3[i]]);
+                }
+                putchar('\n');
+            }
+        }
+        println(sample_ids[sam_idx]);
+        if (hamming_0_sze) {
+            prints("0:");
+            for (int i = 0; i < hamming_0_sze; ++i) {
+                prints(article_ids[hamming_0[i]]);
+                printc(' ');
+            }
+            endl();
+        }
+        if (hamming_1_sze) {
+            prints("1:");
+            for (int i = 0; i < hamming_1_sze; ++i) {
+                prints(article_ids[hamming_1[i]]);
+                printc(' ');
+            }
+            endl();
+        }
+        if (hamming_2_sze) {
+            prints("2:");
+            for (int i = 0; i < hamming_2_sze; ++i) {
+                prints(article_ids[hamming_2[i]]);
+                printc(' ');
+            }
+            endl();
+        }
+        if (hamming_3_sze) {
+            prints("3:");
+            for (int i = 0; i < hamming_3_sze; ++i) {
+                prints(article_ids[hamming_3[i]]);
+                printc(' ');
+            }
+            endl();
+        }
+    }
+    flush();
+    close_io_handle();
+}
 
 int main(int argc, char *argv[]) {
     printf_d("Run!\n");
@@ -589,27 +517,20 @@ int main(int argc, char *argv[]) {
     assert(argc == 3);
     vector_length = str_to_int(argv[1]);
     finger_length = str_to_int(argv[2]);
-    patch_size = (finger_length + 3) / 4;
+    // patch_size = (finger_length + 3) / 4;
 
-    // read_stop_and_hash();
+    read_hash_value(vector_length, finger_length);
     read_stop();
 
     // ======== read articles ========
 
-    // read_articles();
     read_whole_articles();
 
-    // ========  ========
-
-    // sort the feature words
-    // get_sorted_feature_article(total_root);
+    // sort the feature words (articles)
     walk_trie();
-
-    printf_d("Sorted  Over!\n");
-
-    // get_features();
     get_article_features();
 
+#ifdef DEBUG_PRINT_ARTICLE_FEATURE
     FILE *fp = fopen("out.new.txt", "w");
     for (int i = 0; i < article_sze; ++i) {
         fprintf(fp, "[[%s]]\n", article_ids[i]);
@@ -619,22 +540,32 @@ int main(int argc, char *argv[]) {
         fprintf(fp, "\n");
     }
     fclose(fp);
+#endif
 
     // work out the articles' fingers
-    // calculate_finger();
+    calculate_finger();
+
+#ifdef DEBUG_PRINT_ARTICLE_FINGER
+    for (int i = 0; i < 10; ++i) {
+        printf("#%2d: ", i + 1);
+        print_u128(article_fingers[i]);
+        printf("\n");
+    }
+#endif
+
     // ======== read samples ========
-    // // new_pool(sze_node);
-    // read_samples();
+    read_whole_samples();
+    calculate_finger_sample();
 
-    // ========  ========
-    // get_features_sample();
-
-    // figure out the samples' fingers
-    // calculate_finger_sample();
+#ifdef DEBUG_PRINT_SAMPLE_INFO
+    for (int i = 0; i < sample_sze; ++i) {
+        printf("Sample #%2d: %s\n", i + 1, sample_ids[i]);
+    }
+#endif
 
     // cmp the fingers
     // I promise that I would make them more graceful!!!
-    // emit_results();
+    emit_results();
 
     return 0;
 }

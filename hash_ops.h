@@ -15,4 +15,7 @@ extern hash_t hashes[];
 
 void read_hash_value(int, int);
 int hamming(unsigned __int128, int);
+
+void print_u128(hash_t x);
+
 #endif
