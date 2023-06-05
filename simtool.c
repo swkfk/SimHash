@@ -1,9 +1,4 @@
-
-#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
-#pragma GCC target("fma,sse,sse2,sse3,ssse3,sse4.1,sse4.2,avx,avx2,popcnt,tune=native")
-#pragma GCC optimize(3, "Ofast", "inline")
-
-#include <immintrin.h>
+#include "optimize.h"
 
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
@@ -27,9 +22,9 @@
 #define printf_d(...) ;
 #endif
 
-typedef unsigned __int128 finger_t;
+typedef uint64_t finger_t;
 
-int str_to_int(const char *s) {
+int str_to_int(const char *__restrict s) {
     int res = 0;
     const char *p = s;
     do {
@@ -79,7 +74,7 @@ int hamming_3_sze;
 int word_count[ARTICLE_CNT][10000] /*__attribute__((__aligned__(32)))*/;
 
 unsigned int tmp;
-unsigned __int128 tmp128;
+uint64_t tmp128;
 
 // __m256i avx_a, avx_b, avx_c;
 // int32_t avx_arr[8] __attribute__((__aligned__(32)));
@@ -136,7 +131,6 @@ void read_whole_articles() {
         }
         article_starts[article_sze] = c;
         ++article_sze;
-
         for (;;) {
             if (ISALPHA(*c)) {
                 if (!trie_tree[cur_trie_idx].next[TOINDEX(*c)]) {
@@ -421,7 +415,7 @@ void emit_results() {
     for (int sam_idx = 0; sam_idx < sample_sze; ++sam_idx) {
         hamming_0_sze = hamming_1_sze = hamming_2_sze = hamming_3_sze = 0;
         for (art_idx = 0; art_idx < article_sze; ++art_idx) {
-            tmp = popcnt_u128(article_fingers[art_idx] ^ sample_fingers[sam_idx]);
+            tmp = __builtin_popcountll(article_fingers[art_idx] ^ sample_fingers[sam_idx]);
             if (likely(tmp > 3)) {
                 continue;
             }
