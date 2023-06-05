@@ -61,7 +61,7 @@ finger_t article_fingers[ARTICLE_CNT];
 
 char sample_ids[SAMPLE_CNT][64];
 int sample_sze;
-finger_t sample_fingers[ARTICLE_CNT];
+finger_t sample_fingers[SAMPLE_CNT];
 
 // int web_weight[10000]; // tmp, each article & sample
 int *web_weight;
@@ -76,16 +76,10 @@ int hamming_2_sze;
 int hamming_3[ARTICLE_CNT];
 int hamming_3_sze;
 
-char buf[WORD_SZE];
-int buf_sze;
-
 int word_count[ARTICLE_CNT][10000] /*__attribute__((__aligned__(32)))*/;
 
 unsigned int tmp;
 unsigned __int128 tmp128;
-FILE *stream;
-
-int skip_ret;
 
 // __m256i avx_a, avx_b, avx_c;
 // int32_t avx_arr[8] __attribute__((__aligned__(32)));
@@ -95,7 +89,7 @@ typedef struct _TRIE_NODE {
     int next[27];
 } array_trie_node_t;
 
-array_trie_node_t trie_tree[1000000];
+array_trie_node_t trie_tree[300000];
 uint_fast32_t cur_trie_idx, next_alloc_idx = 1;
 
 void read_stop() {

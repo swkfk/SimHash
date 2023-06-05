@@ -32,7 +32,6 @@ void endl() {
 }
 
 void flush() {
-    // passage_buf[passage_len++] = 0;
     fwrite_unlocked(passage_buf, 1, passage_len, fp);
 }
 
