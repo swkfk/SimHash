@@ -79,12 +79,12 @@ uint64_t tmp128;
 // __m256i avx_a, avx_b, avx_c;
 // int32_t avx_arr[8] __attribute__((__aligned__(32)));
 
+uint_fast32_t count[TRIE_NODE_CNT];
 typedef struct _TRIE_NODE {
-    uint_fast32_t count;
     int next[27];
 } array_trie_node_t;
 
-array_trie_node_t trie_tree[300000];
+array_trie_node_t trie_tree[TRIE_NODE_CNT];
 uint_fast32_t cur_trie_idx, next_alloc_idx = 1;
 
 void read_stop() {
@@ -96,7 +96,7 @@ void read_stop() {
         if (*c == '\r')
             ;
         else if (*c == '\n') {
-            trie_tree[cur_trie_idx].count = 0x80000000u;
+            count[cur_trie_idx] = 0x80000000u;
             cur_trie_idx = 0;
         } else {
             if (!trie_tree[cur_trie_idx].next[TOINDEX(*c)]) {
@@ -107,7 +107,7 @@ void read_stop() {
         ++c;
     }
     if (cur_trie_idx) {
-        trie_tree[cur_trie_idx].count = 0x80000000u;
+        count[cur_trie_idx] = 0x80000000u;
         cur_trie_idx = 0;
     }
 }
@@ -141,7 +141,7 @@ void read_whole_articles() {
             } else {
                 // if (!(trie_tree[cur_trie_idx].count >> 31)) {
                 //    // not stop words
-                ++trie_tree[cur_trie_idx].count;
+                ++count[cur_trie_idx];
                 // }
                 cur_trie_idx = 0;
                 while (!ISALPHA(*c)) {
@@ -178,9 +178,9 @@ void walk_trie() {
     stack[stack_sze++] = 0;
     while (stack_sze) {
         root = stack[--stack_sze];
-        if (!(trie_tree[root].count >> 31)) {
+        if (!(count[root] >> 31)) {
             mosts[word_sze].idx = root;
-            mosts[word_sze].count = trie_tree[root].count;
+            mosts[word_sze].count = count[root];
             ++word_sze;
         }
         for (register int i = 26; i >= 1; --i) {
@@ -286,7 +286,7 @@ void get_article_features() {
     }
 #endif
     for (register int j = 0; j < vector_length; ++j) {
-        trie_tree[mosts[j].idx].count = 0;
+        count[mosts[j].idx] = 0;
     }
     for (int i = 0; i < article_sze; ++i) {
         // cptr_cur = count_ptr[(count_cur++) & 1];
@@ -299,14 +299,14 @@ void get_article_features() {
             } else {
                 while (!*(++c))
                     ;
-                ++trie_tree[cur_trie_idx].count;
+                ++count[cur_trie_idx];
                 cur_trie_idx = 0;
             }
         }
         for (register int j = 0; j < vector_length; ++j) {
             // word_count[i][j] = cptr_cur[j] - cptr_last[j];
-            word_count[i][j] = trie_tree[mosts[j].idx].count;
-            trie_tree[mosts[j].idx].count = 0;
+            word_count[i][j] = count[mosts[j].idx];
+            count[mosts[j].idx] = 0;
         }
     }
 }
@@ -370,7 +370,7 @@ void read_whole_samples() {
                 cur_trie_idx = trie_tree[cur_trie_idx].next[TOINDEX(*c)];
                 ++c;
             } else {
-                ++trie_tree[cur_trie_idx].count;
+                ++count[cur_trie_idx];
                 cur_trie_idx = 0;
                 while (!ISALPHA(*c)) {
                     if (*c == '\f' || !*c) {
@@ -387,8 +387,8 @@ void read_whole_samples() {
     end_of_endless_loop_sample:
         arr_tmp = word_count[sample_sze - 1];
         for (register int j = 0; j < vector_length; ++j) {
-            arr_tmp[j] = trie_tree[mosts[j].idx].count;
-            trie_tree[mosts[j].idx].count = 0;
+            arr_tmp[j] = count[mosts[j].idx];
+            count[mosts[j].idx] = 0;
         }
     }
 }
