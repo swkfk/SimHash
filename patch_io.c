@@ -23,13 +23,13 @@ void prints(const char *__restrict s) {
     }
 }
 
-void printc(const char c) {
-    passage_buf[passage_len++] = c;
-}
+// void printc(const char c) {
+//     passage_buf[passage_len++] = c;
+// }
 
-void endl() {
-    passage_buf[passage_len++] = '\n';
-}
+// void endl() {
+//     passage_buf[passage_len++] = '\n';
+// }
 
 void flush() {
     fwrite_unlocked(passage_buf, 1, passage_len, fp);
