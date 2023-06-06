@@ -11,6 +11,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "char_ops.h"
 #include "consts.h"
 #include "hash_ops.h"
@@ -113,9 +119,14 @@ void read_stop() {
 }
 
 void read_whole_articles() {
-    FILE *fp = fopen("./article.txt", "rb");
-    passage_len = fread_unlocked(passage_buf, 1, PATCH_BUF_SZE, fp);
-    fclose(fp);
+    // FILE *fp = fopen("./article.txt", "rb");
+    // passage_len = fread_unlocked(passage_buf, 1, PATCH_BUF_SZE, fp);
+    // fclose(fp);
+    int fd = open("article.txt", O_RDONLY);
+    struct stat status;
+    fstat(fd, &status);
+    passage_len = status.st_size;
+    memcpy(passage_buf, mmap(NULL, passage_len, PROT_READ, MAP_SHARED, fd, 0), passage_len);
     register char *c = passage_buf;
     register uint_fast32_t tmp_idx;
     while (*c) {
