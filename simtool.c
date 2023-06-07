@@ -143,9 +143,9 @@ void read_whole_articles() {
         while (*c == '\f' || *c == '\r' || *c == '\n') {
             ++c;
         }
-        if (passage_len == c - passage_buf_map) {
-            break;
-        }
+        // if (passage_len == c - passage_buf_map) {
+        //     break;
+        // }
         tmp_idx = 0;
         while (*c != '\r' && *c != '\n') {
             article_ids[article_sze][tmp_idx++] = *(c++);
