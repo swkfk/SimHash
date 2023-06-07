@@ -94,10 +94,16 @@ array_trie_node_t trie_tree[TRIE_NODE_CNT];
 uint_fast32_t cur_trie_idx, next_alloc_idx = 1;
 
 void read_stop() {
-    FILE *fp = fopen("./stopwords.txt", "rb");
-    passage_buf[fread_unlocked(passage_buf, 1, PATCH_BUF_SZE, fp)] = '\n';
-    fclose(fp);
-    register char *c = passage_buf;
+    // FILE *fp = fopen("./stopwords.txt", "rb");
+    // passage_buf[fread_unlocked(passage_buf, 1, PATCH_BUF_SZE, fp)] = '\n';
+    // fclose(fp);
+    int fd = open("stopwords.txt", O_RDONLY);
+    struct stat status;
+    fstat(fd, &status);
+    int passage_len = status.st_size;
+    char *buf = mmap(NULL, passage_len, PROT_READ, MAP_PRIVATE, fd, 0);
+    close(fd);
+    register char *c = buf;
     while (*c) {
         if (*c == '\r')
             ;
@@ -118,22 +124,26 @@ void read_stop() {
     }
 }
 
+char *passage_buf_map, *sample_buf_map;
+
 void read_whole_articles() {
     // FILE *fp = fopen("./article.txt", "rb");
     // passage_len = fread_unlocked(passage_buf, 1, PATCH_BUF_SZE, fp);
     // fclose(fp);
-    int fd = open("article.txt", O_RDONLY);
+    int fd = open("article.txt", O_RDWR);
     struct stat status;
     fstat(fd, &status);
     passage_len = status.st_size;
-    memcpy(passage_buf, mmap(NULL, passage_len, PROT_READ, MAP_SHARED, fd, 0), passage_len);
-    register char *c = passage_buf;
+    // memcpy(passage_buf, mmap(NULL, passage_len, PROT_READ, MAP_SHARED, fd, 0), passage_len);
+    passage_buf_map = mmap(NULL, passage_len, PROT_WRITE, MAP_PRIVATE, fd, 0);
+    close(fd);
+    register char *c = passage_buf_map;
     register uint_fast32_t tmp_idx;
     while (*c) {
         while (*c == '\f' || *c == '\r' || *c == '\n') {
             ++c;
         }
-        if (passage_len == c - passage_buf) {
+        if (passage_len == c - passage_buf_map) {
             break;
         }
         tmp_idx = 0;
@@ -161,6 +171,7 @@ void read_whole_articles() {
                         goto end_of_endless_loop;
                     }
                     *(c++) = '\0';
+                    // ++c;
                 }
             }
         }
@@ -308,7 +319,7 @@ void get_article_features() {
                 cur_trie_idx = trie_tree[cur_trie_idx].next[TOINDEX(*c)];
                 ++c;
             } else {
-                while (!*(++c))
+                while (!*++c)
                     ;
                 ++count[cur_trie_idx];
                 cur_trie_idx = 0;
@@ -352,10 +363,16 @@ void calculate_finger() {
 }
 
 void read_whole_samples() {
-    FILE *fp = fopen("./sample.txt", "rb");
-    passage_len = fread(passage_buf, 1, PATCH_BUF_SZE - 1, fp);
-    fclose(fp);
-    register char *c = passage_buf;
+    // FILE *fp = fopen("./sample.txt", "rb");
+    // passage_len = fread(passage_buf, 1, PATCH_BUF_SZE - 1, fp);
+    // fclose(fp);
+    int fd = open("sample.txt", O_RDWR);
+    struct stat status;
+    fstat(fd, &status);
+    passage_len = status.st_size;
+    sample_buf_map = mmap(NULL, passage_len, PROT_WRITE, MAP_PRIVATE, fd, 0);
+    close(fd);
+    register char *c = sample_buf_map;
     register uint_fast32_t tmp_idx;
     while (*c) {
         while (*c == '\f' || *c == '\r' || *c == '\n') {
@@ -364,7 +381,7 @@ void read_whole_samples() {
 #endif
             ++c;
         }
-        if (passage_len == c - passage_buf) {
+        if (passage_len == c - sample_buf_map) {
             break;
         }
         tmp_idx = 0;
