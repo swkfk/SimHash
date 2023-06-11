@@ -8,7 +8,7 @@ typedef unsigned __int128 hash_t;
 #define USE_INT_HASH
 
 #ifdef USE_INT_HASH
-extern int hash[][10000];
+extern int hash[][128];
 #else
 extern hash_t hashes[];
 #endif

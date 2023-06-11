@@ -335,30 +335,25 @@ void get_article_features() {
 
 int *arr_tmp;
 
+int finger_bits[64]; // Big data's finger length <= 64
+
 void calculate_finger() {
-    for (int i = 0; i < article_sze; ++i) {
-        web_weight = word_count[i];
-        tmp128 = 0;
-        for (int finger_bit = 0; finger_bit < finger_length; ++finger_bit) {
-            tmp = 0x80000000u;
-            arr_tmp = hash[finger_bit];
-            for (int i = 0; i < vector_length; ++i) {
-                tmp += arr_tmp[i] * web_weight[i];
+    for (int art = 0; art < article_sze; ++art) {
+        memset(finger_bits, 0, sizeof(finger_bits));
+        web_weight = word_count[art];
+        for (int i = 0; i < vector_length; ++i) {
+            if (!web_weight[i]) {
+                continue;
             }
-            // avx_c = _mm256_set_epi32(0, 0, 0, 0, 0, 0, 0, 0);
-            // for (int i = 0; i < patch_size; ++i) {
-            //     avx_a = _mm256_load_epi32(arr_tmp + i * 8);
-            //     avx_b = _mm256_load_epi32(web_weight + i * 8);
-            //     avx_a = _mm256_mul_epi32(avx_a, avx_b);
-            //     avx_c = _mm256_add_epi32(avx_a, avx_c);
-            // }
-            // _mm256_store_epi32(avx_arr, avx_c);
-            // for (int i = 0; i < 7; ++i) {
-            //     tmp += avx_arr[i];
-            // }
-            tmp128 = tmp128 << 1 | (tmp >> 31); // < 0x80000000u => 1
+            for (int j = 0; j < finger_length; ++j) {
+                finger_bits[j] += hash[i][j] * web_weight[i];
+            }
         }
-        article_fingers[i] = tmp128;
+        tmp128 = 0;
+        for (int j = 0; j < finger_length; ++j) {
+            tmp128 = tmp128 << 1 | (finger_bits[j] < 0);
+        }
+        article_fingers[art] = tmp128;
     }
 }
 
@@ -422,18 +417,22 @@ void read_whole_samples() {
 }
 
 void calculate_finger_sample() {
-    for (int i = 0; i < sample_sze; ++i) {
-        web_weight = word_count[i];
-        tmp128 = 0;
-        for (int finger_bit = 0; finger_bit < finger_length; ++finger_bit) {
-            arr_tmp = hash[finger_bit];
-            tmp = 0x80000000u;
-            for (int j = 0; j < vector_length; ++j) {
-                tmp += web_weight[j] * arr_tmp[j];
+    for (int art = 0; art < sample_sze; ++art) {
+        memset(finger_bits, 0, sizeof(finger_bits));
+        web_weight = word_count[art];
+        for (int i = 0; i < vector_length; ++i) {
+            if (!web_weight[i]) {
+                continue;
             }
-            tmp128 = tmp128 << 1 | (tmp >> 31); // < 0x80000000u => 1
+            for (int j = 0; j < finger_length; ++j) {
+                finger_bits[j] += hash[i][j] * web_weight[i];
+            }
         }
-        sample_fingers[i] = tmp128;
+        tmp128 = 0;
+        for (int j = 0; j < finger_length; ++j) {
+            tmp128 = tmp128 << 1 | (finger_bits[j] < 0);
+        }
+        sample_fingers[art] = tmp128;
     }
 }
 
