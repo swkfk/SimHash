@@ -58,11 +58,9 @@ int vector_length, finger_length, patch_size;
 char article_ids[ARTICLE_CNT][64];
 char *article_starts[ARTICLE_CNT], *article_ends[ARTICLE_CNT];
 int article_sze;
-finger_t article_fingers[ARTICLE_CNT];
 
 char sample_ids[SAMPLE_CNT][64];
 int sample_sze;
-finger_t sample_fingers[SAMPLE_CNT];
 
 // int web_weight[10000]; // tmp, each article & sample
 int *web_weight;
@@ -80,7 +78,6 @@ int hamming_3_sze;
 int word_count[ARTICLE_CNT][10000] /*__attribute__((__aligned__(32)))*/;
 
 unsigned int tmp;
-uint64_t tmp128;
 
 // __m256i avx_a, avx_b, avx_c;
 // int32_t avx_arr[8] __attribute__((__aligned__(32)));
