@@ -335,25 +335,25 @@ void get_article_features() {
 
 int *arr_tmp;
 
-int finger_bits[64]; // Big data's finger length <= 64
+int *finger_bits; // Big data's finger length <= 64
+
+int article_fingers_array[ARTICLE_CNT][64];
+int sample_fingers_array[ARTICLE_CNT][64];
 
 void calculate_finger() {
     for (int art = 0; art < article_sze; ++art) {
-        memset(finger_bits, 0, sizeof(finger_bits));
         web_weight = word_count[art];
         for (int i = 0; i < vector_length; ++i) {
             if (!web_weight[i]) {
                 continue;
             }
             for (int j = 0; j < finger_length; ++j) {
-                finger_bits[j] += hash[i][j] * web_weight[i];
+                article_fingers_array[art][j] += hash[i][j] * web_weight[i];
             }
         }
-        tmp128 = 0;
         for (int j = 0; j < finger_length; ++j) {
-            tmp128 = tmp128 << 1 | (finger_bits[j] < 0);
+            article_fingers_array[art][j] = article_fingers_array[art][j] < 0;
         }
-        article_fingers[art] = tmp128;
     }
 }
 
@@ -418,34 +418,38 @@ void read_whole_samples() {
 
 void calculate_finger_sample() {
     for (int art = 0; art < sample_sze; ++art) {
-        memset(finger_bits, 0, sizeof(finger_bits));
         web_weight = word_count[art];
         for (int i = 0; i < vector_length; ++i) {
             if (!web_weight[i]) {
                 continue;
             }
             for (int j = 0; j < finger_length; ++j) {
-                finger_bits[j] += hash[i][j] * web_weight[i];
+                sample_fingers_array[art][j] += hash[i][j] * web_weight[i];
             }
         }
-        tmp128 = 0;
         for (int j = 0; j < finger_length; ++j) {
-            tmp128 = tmp128 << 1 | (finger_bits[j] < 0);
+            sample_fingers_array[art][j] = sample_fingers_array[art][j] < 0;
         }
-        sample_fingers[art] = tmp128;
     }
 }
 
 void emit_results() {
     open_write_handle("result.txt");
-    int art_idx;
+    int art_idx, j;
     for (int sam_idx = 0; sam_idx < sample_sze; ++sam_idx) {
         hamming_0_sze = hamming_1_sze = hamming_2_sze = hamming_3_sze = 0;
         for (art_idx = 0; art_idx < article_sze; ++art_idx) {
-            tmp = __builtin_popcountll(article_fingers[art_idx] ^ sample_fingers[sam_idx]);
-            if (likely(tmp > 3)) {
-                continue;
+            // tmp = __builtin_popcountll(article_fingers[art_idx] ^ sample_fingers[sam_idx]);
+            tmp = 0;
+            for (j = 0; j < finger_length; ++j) {
+                tmp += article_fingers_array[art_idx][j] ^ sample_fingers_array[sam_idx][j];
+                if (tmp > 3) {
+                    goto HugeDiffPruning;
+                }
             }
+            // if (likely(tmp > 3)) {
+            //     continue;
+            // }
             if (tmp == 0) {
                 hamming_0[hamming_0_sze++] = art_idx;
             } else if (tmp == 1) {
@@ -455,6 +459,7 @@ void emit_results() {
             } else if (tmp == 3) {
                 hamming_3[hamming_3_sze++] = art_idx;
             }
+        HugeDiffPruning:;
         }
         if (unlikely(!sam_idx)) {
             puts(sample_ids[sam_idx]);
