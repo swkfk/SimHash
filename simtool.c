@@ -181,7 +181,7 @@ typedef struct {
 } mosts_t;
 mosts_t mosts[WORD_CNT];
 uint_fast32_t word_sze;
-uint_fast32_t stack[WORD_CNT];
+uint_fast32_t stack[TRIE_NODE_CNT];
 uint_fast32_t stack_sze;
 
 void walk_trie() {
@@ -197,7 +197,7 @@ void walk_trie() {
     stack[stack_sze++] = 0;
     while (stack_sze) {
         root = stack[--stack_sze];
-        if (!(count[root] >> 31)) {
+        if (count[root] && !(count[root] >> 31)) {
             mosts[word_sze].idx = root;
             mosts[word_sze].count = count[root];
             ++word_sze;
