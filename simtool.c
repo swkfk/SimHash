@@ -39,21 +39,7 @@ int str_to_int(const char *__restrict s) {
     return res;
 }
 
-typedef union {
-    __uint128_t u128;
-    uint64_t u64[2];
-} u128_t;
-
-static inline uint_fast8_t popcnt_u128(__uint128_t n) {
-    const u128_t u = {.u128 = n};
-    const uint_fast8_t cnt_a = __builtin_popcountll(u.u64[0]);
-    const uint_fast8_t cnt_b = __builtin_popcountll(u.u64[1]);
-    return cnt_a + cnt_b;
-}
-
-int vector_length, finger_length, patch_size;
-// trie_ndoe_article_t *total_root;
-// trie_ndoe_t *sample_root[SAMPLE_CNT];
+int vector_length, finger_length;
 
 int word_record[TOTAL_WORD + ARTICLE_CNT];
 int word_rec_sze;
@@ -63,7 +49,6 @@ int article_sze;
 char sample_ids[SAMPLE_CNT][64];
 int sample_sze;
 
-// int web_weight[10000]; // tmp, each article & sample
 int *web_weight;
 
 // the distance for each sample
@@ -80,9 +65,6 @@ int word_count[ARTICLE_CNT][10000] /*__attribute__((__aligned__(32)))*/;
 
 unsigned int tmp;
 
-// __m256i avx_a, avx_b, avx_c;
-// int32_t avx_arr[8] __attribute__((__aligned__(32)));
-
 uint_fast32_t count[TRIE_NODE_CNT];
 typedef struct _TRIE_NODE {
     int next[27];
@@ -92,15 +74,13 @@ array_trie_node_t trie_tree[TRIE_NODE_CNT];
 uint_fast32_t cur_trie_idx, next_alloc_idx = 1;
 
 void read_stop() {
-    // FILE *fp = fopen("./stopwords.txt", "rb");
-    // passage_buf[fread_unlocked(passage_buf, 1, PATCH_BUF_SZE, fp)] = '\n';
-    // fclose(fp);
     int fd = open("stopwords.txt", O_RDONLY);
     struct stat status;
     fstat(fd, &status);
     int passage_len = status.st_size;
     char *buf = mmap(NULL, passage_len, PROT_READ, MAP_PRIVATE, fd, 0);
     close(fd);
+
     register char *c = buf;
     while (*c) {
         if (*c == '\r')
@@ -125,25 +105,19 @@ void read_stop() {
 char *passage_buf_map, *sample_buf_map;
 
 void read_whole_articles() {
-    // FILE *fp = fopen("./article.txt", "rb");
-    // passage_len = fread_unlocked(passage_buf, 1, PATCH_BUF_SZE, fp);
-    // fclose(fp);
     int fd = open("article.txt", O_RDONLY);
     struct stat status;
     fstat(fd, &status);
     passage_len = status.st_size;
-    // memcpy(passage_buf, mmap(NULL, passage_len, PROT_READ, MAP_SHARED, fd, 0), passage_len);
     passage_buf_map = mmap(NULL, passage_len, PROT_READ, MAP_PRIVATE, fd, 0);
     close(fd);
+
     register char *c = passage_buf_map;
     register uint_fast32_t tmp_idx;
     while (*c) {
         while (*c == '\f' || *c == '\r' || *c == '\n') {
             ++c;
         }
-        // if (passage_len == c - passage_buf_map) {
-        //     break;
-        // }
         tmp_idx = 0;
         while (*c != '\r' && *c != '\n') {
             article_ids[article_sze][tmp_idx++] = *(c++);
@@ -157,18 +131,14 @@ void read_whole_articles() {
                 cur_trie_idx = trie_tree[cur_trie_idx].next[TOINDEX(*c)];
                 ++c;
             } else {
-                // if (!(trie_tree[cur_trie_idx].count >> 31)) {
-                //    // not stop words
                 ++count[cur_trie_idx];
                 word_record[word_rec_sze++] = cur_trie_idx;
-                // }
                 cur_trie_idx = 0;
                 while (!ISALPHA(*c)) {
                     if (*c == '\f' || !*c) {
                         word_record[word_rec_sze++] = -1;
                         goto end_of_endless_loop;
                     }
-                    // *(c++) = '\0';
                     ++c;
                 }
             }
@@ -186,14 +156,6 @@ uint_fast32_t stack[TRIE_NODE_CNT];
 uint_fast32_t stack_sze;
 
 void walk_trie() {
-    // for (int i = 1; i < next_alloc_idx; ++i) {
-    //     // plus 1 is important
-    //     if (trie_tree[i].count + 1 > 1) {
-    //         mosts[word_sze].idx = i;
-    //         mosts[word_sze].count = trie_tree[i].count;
-    //         ++word_sze;
-    //     }
-    // }
     uint32_t root;
     stack[stack_sze++] = 0;
     while (stack_sze) {
@@ -209,13 +171,8 @@ void walk_trie() {
             }
         }
     }
-    // printf("%lu %lu\n", mosts[0].count, mosts[0].idx);
-    // exit(0);
+
     mosts[0].count = 0;
-    // for (int i = 0; i < vector_length; ++i) {
-    //     printf("%lu ", mosts[i].count);
-    // }
-    // printf("\n");
 }
 
 #ifdef DEBUG_MOST_WORD_PRINT
@@ -282,24 +239,14 @@ void print_trie_result() {
 #endif
 
 int cmp(const void *a, const void *b) {
-    // return memcmp(&(((mosts_t *) a)->count), &(((mosts_t *) b)->count), sizeof(uint_fast32_t));
     // ==: -1, no swap
     return (((mosts_t *) a)->count >= ((mosts_t *) b)->count) ? -1 : 1;
 }
-
-// uint_fast32_t count_1[10005], count_2[10005];
-// uint_fast32_t *count_ptr[] = {count_1, count_2};
-// uint_fast8_t count_cur = 1, count_last = 0;
-// uint_fast32_t *cptr_cur, *cptr_last;
 
 void get_article_features() {
     qsort(mosts, word_sze, sizeof(mosts_t), cmp);
     print_trie(0);
     print_trie_result();
-    // for (int i = 0; i < vector_length; ++i) {
-    //     printf("%lu ", mosts[i].count);
-    // }
-    // printf("\n");
 #ifdef DEBUG_PRINT_MOST_FREQS
     for (int i = 0; i < vector_length; ++i) {
         printf("Most freqs: #%3d: %lu\n", i + 1, mosts[i].count);
@@ -310,13 +257,10 @@ void get_article_features() {
     }
     register int word_rec_pos = -1;
     for (int i = 0; i < article_sze; ++i) {
-        // cptr_cur = count_ptr[(count_cur++) & 1];
-        // cptr_last = count_ptr[(count_last++) & 1];
         while (~word_record[++word_rec_pos]) {
             ++count[word_record[word_rec_pos]];
         }
         for (register int j = 0; j < vector_length; ++j) {
-            // word_count[i][j] = cptr_cur[j] - cptr_last[j];
             word_count[i][j] = count[mosts[j].idx];
             count[mosts[j].idx] = 0;
         }
@@ -325,10 +269,10 @@ void get_article_features() {
 
 int *arr_tmp;
 
-int *finger_bits; // Big data's finger length <= 64
+// Big data's finger length <= 64
 
 int article_fingers_array[ARTICLE_CNT][64];
-int sample_fingers_array[ARTICLE_CNT][64];
+int sample_fingers_array[SAMPLE_CNT][64];
 
 void calculate_finger() {
     for (int art = 0; art < article_sze; ++art) {
@@ -342,21 +286,19 @@ void calculate_finger() {
             }
         }
         for (int j = 0; j < finger_length; ++j) {
-            article_fingers_array[art][j] = article_fingers_array[art][j] < 0;
+            article_fingers_array[art][j] = (unsigned) article_fingers_array[art][j] >> 31;
         }
     }
 }
 
 void read_whole_samples() {
-    // FILE *fp = fopen("./sample.txt", "rb");
-    // passage_len = fread(passage_buf, 1, PATCH_BUF_SZE - 1, fp);
-    // fclose(fp);
-    int fd = open("sample.txt", O_RDWR);
+    int fd = open("sample.txt", O_RDONLY);
     struct stat status;
     fstat(fd, &status);
     passage_len = status.st_size;
-    sample_buf_map = mmap(NULL, passage_len, PROT_WRITE, MAP_PRIVATE, fd, 0);
+    sample_buf_map = mmap(NULL, passage_len, PROT_READ, MAP_PRIVATE, fd, 0);
     close(fd);
+
     register char *c = sample_buf_map;
     register uint_fast32_t tmp_idx;
     while (*c) {
@@ -392,7 +334,6 @@ void read_whole_samples() {
 #endif
                         goto end_of_endless_loop_sample;
                     }
-                    // *(c++) = '\0';
                     ++c;
                 }
             }
@@ -429,7 +370,6 @@ void emit_results() {
     for (int sam_idx = 0; sam_idx < sample_sze; ++sam_idx) {
         hamming_0_sze = hamming_1_sze = hamming_2_sze = hamming_3_sze = 0;
         for (art_idx = 0; art_idx < article_sze; ++art_idx) {
-            // tmp = __builtin_popcountll(article_fingers[art_idx] ^ sample_fingers[sam_idx]);
             tmp = 0;
             for (j = 0; j < finger_length; ++j) {
                 tmp += article_fingers_array[art_idx][j] ^ sample_fingers_array[sam_idx][j];
@@ -437,9 +377,6 @@ void emit_results() {
                     goto HugeDiffPruning;
                 }
             }
-            // if (likely(tmp > 3)) {
-            //     continue;
-            // }
             if (tmp == 0) {
                 hamming_0[hamming_0_sze++] = art_idx;
             } else if (tmp == 1) {
@@ -527,8 +464,8 @@ int main(int argc, char *argv[]) {
     assert(argc == 3);
     vector_length = str_to_int(argv[1]);
     finger_length = str_to_int(argv[2]);
-    // patch_size = (finger_length + 3) / 4;
 
+    // the three most frequent start alphabet
     trie_tree[0].next[TOINDEX('s')] = next_alloc_idx++;
     trie_tree[0].next[TOINDEX('c')] = next_alloc_idx++;
     trie_tree[0].next[TOINDEX('p')] = next_alloc_idx++;
@@ -578,7 +515,6 @@ int main(int argc, char *argv[]) {
 #endif
 
     // cmp the fingers
-    // I promise that I would make them more graceful!!!
     emit_results();
 
     return 0;
