@@ -531,6 +531,10 @@ int main(int argc, char *argv[]) {
     finger_length = str_to_int(argv[2]);
     // patch_size = (finger_length + 3) / 4;
 
+    trie_tree[0].next[TOINDEX('s')] = next_alloc_idx++;
+    trie_tree[0].next[TOINDEX('c')] = next_alloc_idx++;
+    trie_tree[0].next[TOINDEX('p')] = next_alloc_idx++;
+
     read_hash_value(vector_length, finger_length);
     read_stop();
 
