@@ -55,10 +55,9 @@ int vector_length, finger_length, patch_size;
 // trie_ndoe_article_t *total_root;
 // trie_ndoe_t *sample_root[SAMPLE_CNT];
 
-int word_record[TOTAL_WORD];
+int word_record[TOTAL_WORD + ARTICLE_CNT];
 int word_rec_sze;
 char article_ids[ARTICLE_CNT][64];
-int article_starts[ARTICLE_CNT], article_ends[ARTICLE_CNT];
 int article_sze;
 
 char sample_ids[SAMPLE_CNT][64];
@@ -149,7 +148,6 @@ void read_whole_articles() {
         while (*c != '\r' && *c != '\n') {
             article_ids[article_sze][tmp_idx++] = *(c++);
         }
-        article_starts[article_sze] = word_rec_sze;
         ++article_sze;
         for (;;) {
             if (ISALPHA(*c)) {
@@ -167,7 +165,7 @@ void read_whole_articles() {
                 cur_trie_idx = 0;
                 while (!ISALPHA(*c)) {
                     if (*c == '\f' || !*c) {
-                        article_ends[article_sze - 1] = word_rec_sze;
+                        word_record[word_rec_sze++] = -1;
                         goto end_of_endless_loop;
                     }
                     *(c++) = '\0';
@@ -310,12 +308,12 @@ void get_article_features() {
     for (register int j = 0; j < vector_length; ++j) {
         count[mosts[j].idx] = 0;
     }
+    register int word_rec_pos = -1;
     for (int i = 0; i < article_sze; ++i) {
         // cptr_cur = count_ptr[(count_cur++) & 1];
         // cptr_last = count_ptr[(count_last++) & 1];
-        register int tstart = article_starts[i], tend = article_ends[i];
-        for (int i = tstart; i < tend; ++i) {
-            ++count[word_record[i]];
+        while (~word_record[++word_rec_pos]) {
+            ++count[word_record[word_rec_pos]];
         }
         for (register int j = 0; j < vector_length; ++j) {
             // word_count[i][j] = cptr_cur[j] - cptr_last[j];
