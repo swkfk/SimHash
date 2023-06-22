@@ -128,12 +128,12 @@ void read_whole_articles() {
     // FILE *fp = fopen("./article.txt", "rb");
     // passage_len = fread_unlocked(passage_buf, 1, PATCH_BUF_SZE, fp);
     // fclose(fp);
-    int fd = open("article.txt", O_RDWR);
+    int fd = open("article.txt", O_RDONLY);
     struct stat status;
     fstat(fd, &status);
     passage_len = status.st_size;
     // memcpy(passage_buf, mmap(NULL, passage_len, PROT_READ, MAP_SHARED, fd, 0), passage_len);
-    passage_buf_map = mmap(NULL, passage_len, PROT_WRITE, MAP_PRIVATE, fd, 0);
+    passage_buf_map = mmap(NULL, passage_len, PROT_READ, MAP_PRIVATE, fd, 0);
     close(fd);
     register char *c = passage_buf_map;
     register uint_fast32_t tmp_idx;
@@ -168,8 +168,8 @@ void read_whole_articles() {
                         word_record[word_rec_sze++] = -1;
                         goto end_of_endless_loop;
                     }
-                    *(c++) = '\0';
-                    // ++c;
+                    // *(c++) = '\0';
+                    ++c;
                 }
             }
         }
