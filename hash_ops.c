@@ -1,7 +1,11 @@
 #include "hash_ops.h"
 #include <stdio.h>
 
-hash_t hashes[10000];
+#ifdef USE_INT_HASH
+int hash[10000][128];
+#else
+hash_t hashes[10000] /*__attribute__((__aligned__(32)))*/;
+#endif
 
 static char buf[512];
 
@@ -17,12 +21,17 @@ void read_hash_value(int rown, int coln) {
     for (int row = 0; row < rown; ++row) {
         fgets(buf, 512, stream);
         for (int i = 0; i < coln; ++i) {
+#ifdef USE_INT_HASH
+            hash[row][i] = buf[i] == '1' ? -1 : 1;
+#else
             hashes[row] = hashes[row] << 1 | (buf[i] == '1');
+#endif
         }
     }
     fclose(stream);
 }
 
+// like popcount
 int hamming(unsigned __int128 src, int n) {
     int res = 0;
     while (n--) {
