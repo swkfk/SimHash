@@ -5,6 +5,7 @@ PACK := src.zip
 SRC := $(wildcard *.c)
 HEADER := ${wildcard *.h}
 OBJ := $(patsubst %.c,%.o,${SRC})
+MASS_DIR := MassData
 
 .PHONY: clean
 .PHONY: clear
@@ -16,6 +17,9 @@ OBJ := $(patsubst %.c,%.o,${SRC})
 
 ${OUT}: ${OBJ} ${HEADER}
 	${CC} ${CFLAG} -o $@ ${OBJ}
+
+test: ${OUT}
+	@cd ${MASS_DIR} && ../${OUT} 5555 99
 
 clean:
 	rm -f *.o ${OUT} ${PACK}
