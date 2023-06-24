@@ -244,7 +244,6 @@ int cmp(const void *a, const void *b) {
 }
 
 void get_article_features() {
-    qsort(mosts, word_sze, sizeof(mosts_t), cmp);
     print_trie(0);
     print_trie_result();
 #ifdef DEBUG_PRINT_MOST_FREQS
@@ -252,9 +251,7 @@ void get_article_features() {
         printf("Most freqs: #%3d: %lu\n", i + 1, mosts[i].count);
     }
 #endif
-    for (register int j = 0; j < vector_length; ++j) {
-        count[mosts[j].idx] = 0;
-    }
+
     register int word_rec_pos = -1;
     for (int i = 0; i < article_sze; ++i) {
         while (~word_record[++word_rec_pos]) {
@@ -477,45 +474,89 @@ int main(int argc, char *argv[]) {
 
     read_whole_articles();
 
-    // sort the feature words (articles)
     walk_trie();
-    get_article_features();
+    qsort(mosts, word_sze, sizeof(mosts_t), cmp);
+    for (register int j = 0; j < vector_length; ++j) {
+        count[mosts[j].idx] = 0;
+    }
 
+    int fd_ctp[2];
+    assert(pipe(fd_ctp) != -1);
+
+    int pid = fork();
+    assert(pid >= 0);
+
+    if (pid == 0) {
+        // child
+        close(fd_ctp[0]);
+        get_article_features();
 #ifdef DEBUG_PRINT_ARTICLE_FEATURE
-    FILE *fp = fopen("out.new.txt", "w");
-    for (int i = 0; i < article_sze; ++i) {
-        fprintf(fp, "[[%s]]\n", article_ids[i]);
-        for (int j = 0; j < vector_length; ++j) {
-            fprintf(fp, "%d ", word_count[i][j]);
+        FILE *fp = fopen("out.new.txt", "w");
+        for (int i = 0; i < article_sze; ++i) {
+            fprintf(fp, "[[%s]]\n", article_ids[i]);
+            for (int j = 0; j < vector_length; ++j) {
+                fprintf(fp, "%d ", word_count[i][j]);
+            }
+            fprintf(fp, "\n");
         }
-        fprintf(fp, "\n");
-    }
-    fclose(fp);
+        fclose(fp);
 #endif
 
-    // work out the articles' fingers
-    calculate_finger();
+        // work out the articles' fingers
+        calculate_finger();
+        int patch = (article_sze + 15) / 16;
+        for (int i = 0; i < patch; ++i) {
+            write(fd_ctp[1], article_fingers_array + i * 16, 4096);
+            // printf("Child write: #%d/%d\n", i + 1, patch);
+        }
+        close(fd_ctp[1]);
+        return 0;
 
-#ifdef DEBUG_PRINT_ARTICLE_FINGER
-    for (int i = 0; i < 10; ++i) {
-        printf("#%2d: ", i + 1);
-        print_u128(article_fingers[i]);
-        printf("\n");
-    }
+    } else {
+        // parent
+        close(fd_ctp[1]);
+
+        // ======== read samples ========
+        read_whole_samples();
+        calculate_finger_sample();
+
+#ifdef DEBUG_EMIT_DETAIL_FINGER
+        FILE *fps = fopen("finger.sample.new.txt", "w");
+        for (int art = 0; art < sample_sze; ++art) {
+            fprintf(fps, "[[%s]]\n", sample_ids[art]);
+            for (int i = 0; i < finger_length; ++i) {
+                fprintf(fps, "%d ", sample_fingers_array[art][i]);
+            }
+            fputc('\n', fps);
+        }
 #endif
 
-    // ======== read samples ========
-    read_whole_samples();
-    calculate_finger_sample();
+        int patch = (article_sze + 15) / 16;
+        for (int i = 0; i < patch; ++i) {
+            read(fd_ctp[0], article_fingers_array + i * 16, 4096);
+            // printf("Parent read: #%d/%d\n", i + 1, patch);
+        }
+
+#ifdef DEBUG_EMIT_DETAIL_FINGER
+        FILE *fpa = fopen("finger.article.new.txt", "w");
+        for (int art = 0; art < article_sze; ++art) {
+            fprintf(fpa, "[[%s]]\n", article_ids[art]);
+            for (int i = 0; i < finger_length; ++i) {
+                fprintf(fpa, "%d ", article_fingers_array[art][i]);
+            }
+            fputc('\n', fpa);
+        }
+#endif
+        close(fd_ctp[0]);
 
 #ifdef DEBUG_PRINT_SAMPLE_INFO
-    for (int i = 0; i < sample_sze; ++i) {
-        printf("Sample #%2d: %s\n", i + 1, sample_ids[i]);
-    }
+        for (int i = 0; i < sample_sze; ++i) {
+            printf("Sample #%2d: %s\n", i + 1, sample_ids[i]);
+        }
 #endif
 
-    // cmp the fingers
-    emit_results();
-
-    return 0;
+        // cmp the fingers
+        emit_results();
+        return 0;
+    }
 }
