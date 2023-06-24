@@ -1,7 +1,7 @@
 #include "patch_io.h"
 #include "consts.h"
 
-char passage_buf[204800];
+char passage_buf[PATCH_BUF_SZE];
 uint_fast32_t passage_len;
 FILE *fp;
 

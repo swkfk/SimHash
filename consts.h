@@ -10,6 +10,9 @@
 #define TRIE_NODE_CNT 300000
 #define TOTAL_WORD 6000000
 
+#define ARTICLE_FILE "article.txt"
+#define SAMPLE_FILE "sample.txt"
+
 // #define DEBUG_MOST_WORD_PRINT
 // #define DEBUG_CATCH_FREQ_1000
 // #define DEBUG_PRINT_MOST_FREQS

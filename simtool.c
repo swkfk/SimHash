@@ -104,16 +104,91 @@ void read_stop() {
 
 char *passage_buf_map, *sample_buf_map;
 
+typedef enum Status { IN_TITLE, WAIT_FOR_TITLE, IN_WORD, IN_SPACE } Status;
+
 void read_whole_articles() {
-    int fd = open("article.txt", O_RDONLY);
+    // FILE *fp = fopen(ARTICLE_FILE, "rb");
+    // passage_len = fread(passage_buf, 1, PATCH_BUF_SZE, fp);
+    // fclose(fp);
+    int fd = open(ARTICLE_FILE, O_RDONLY);
     struct stat status;
     fstat(fd, &status);
-    passage_len = status.st_size;
-    passage_buf_map = mmap(NULL, passage_len, PROT_READ, MAP_PRIVATE, fd, 0);
+    int passage_len = status.st_size;
+    char *c = mmap(NULL, passage_len, PROT_READ, MAP_PRIVATE, fd, 0);
     close(fd);
 
-    register char *c = passage_buf_map;
-    register uint_fast32_t tmp_idx;
+    register uint_fast32_t tmp_idx = 0;
+
+    // Status stat = WAIT_FOR_TITLE;
+
+    // int i = 0;
+    // while (passage_buf[i] == '\f' || passage_buf[i] == '\r' || passage_buf[i] == '\n') {
+    //     ++i;
+    // }
+    // for (; i < passage_len; ++i) {
+    //     switch (stat) {
+    //     case IN_SPACE:
+    //         if (ISALPHA(passage_buf[i])) {
+    //             cur_trie_idx = trie_tree[0].next[TOINDEX(passage_buf[i])];
+    //             stat = IN_WORD;
+    //         } else if (passage_buf[i] == '\f') {
+    //             word_record[word_rec_sze++] = -1;
+    //             stat = WAIT_FOR_TITLE;
+    //         }
+    //         break;
+    //     case IN_WORD:
+    //         if (ISALPHA(passage_buf[i])) {
+    //             if (!trie_tree[cur_trie_idx].next[TOINDEX(passage_buf[i])]) {
+    //                 trie_tree[cur_trie_idx].next[TOINDEX(passage_buf[i])] = next_alloc_idx++;
+    //             }
+    //             cur_trie_idx = trie_tree[cur_trie_idx].next[TOINDEX(passage_buf[i])];
+    //         } else {
+    //             ++count[cur_trie_idx];
+    //             word_record[word_rec_sze++] = cur_trie_idx;
+    //             cur_trie_idx = 0;
+    //             if (passage_buf[i] == '\f') {
+    //                 word_record[word_rec_sze++] = -1;
+    //                 stat = WAIT_FOR_TITLE;
+    //             } else {
+    //                 stat = IN_SPACE;
+    //             }
+    //         }
+    //         break;
+    //     case WAIT_FOR_TITLE:
+    //         if (passage_buf[i] != '\r' && passage_buf[i] != '\n' && passage_buf[i] != ' ' && passage_buf[i] != '\t')
+    //         {
+    //             article_ids[article_sze][(tmp_idx = 1) - 1] = passage_buf[i];
+    //             stat = IN_TITLE;
+    //         }
+    //         break;
+    //     case IN_TITLE:
+    //         if (passage_buf[i] == '\r' || passage_buf[i] == '\n' || passage_buf[i] == ' ' || passage_buf[i] == '\t')
+    //         {
+    //             ++article_sze;
+    //             stat = IN_SPACE;
+    //         } else {
+    //             article_ids[article_sze][tmp_idx++] = passage_buf[i];
+    //         }
+    //         break;
+    //     }
+    //     // if (article_sze == 72) {
+    //     //     printf("<<<<<< i = %d, stat = %d\n", i, stat);
+    //     //     for (int j = i - 10; j <= i + 10; ++j) {
+    //     //         printf("{# %d} => '%c' (%d)\n", j, passage_buf[j], passage_buf[j]);
+    //     //     }
+    //     //     printf(">>>>>>\n");
+    //     // }
+    // }
+    // word_record[word_rec_sze++] = -1;
+
+    // int last = article_sze;
+    // article_sze = 0;
+    // word_rec_sze = 0;
+
+    // for (int i = 0; i < article_sze; ++i) {
+    //     printf("Art #%03d: [%s]\n", i, article_ids[i]);
+    // }
+    // char *c = passage_buf;
     while (*c) {
         while (*c == '\f' || *c == '\r' || *c == '\n') {
             ++c;
@@ -123,6 +198,7 @@ void read_whole_articles() {
             article_ids[article_sze][tmp_idx++] = *(c++);
         }
         ++article_sze;
+
         for (;;) {
             if (ISALPHA(*c)) {
                 if (!trie_tree[cur_trie_idx].next[TOINDEX(*c)]) {
@@ -145,6 +221,8 @@ void read_whole_articles() {
         }
     end_of_endless_loop:;
     }
+    // ~ 0.36s
+    // assert(article_sze == last);
 }
 
 typedef struct {
@@ -173,6 +251,8 @@ void walk_trie() {
     }
 
     mosts[0].count = 0;
+
+    // ~ 0.00s
 }
 
 #ifdef DEBUG_MOST_WORD_PRINT
@@ -224,13 +304,6 @@ void print_trie_result() {
         fprintf(fp, "%s %d\n", words_[i].word, words_[i].count);
     }
     fclose(fp);
-    int idx = trie_tree[0].next[TOINDEX('l')];
-    idx = trie_tree[idx].next[TOINDEX('o')];
-    idx = trie_tree[idx].next[TOINDEX('o')];
-    idx = trie_tree[idx].next[TOINDEX('k')];
-    idx = trie_tree[idx].next[TOINDEX('e')];
-    idx = trie_tree[idx].next[TOINDEX('d')];
-    printf("*** looked: %lu***\n", trie_tree[idx].count);
 }
 
 #else
@@ -265,6 +338,7 @@ void get_article_features() {
             count[mosts[j].idx] = 0;
         }
     }
+    // ~ 0.40s
 }
 
 int *arr_tmp;
@@ -275,24 +349,49 @@ int article_fingers_array[ARTICLE_CNT][64];
 int sample_fingers_array[SAMPLE_CNT][64];
 
 void calculate_finger() {
+    register int t;
+    // int rest = finger_length % 8;
+    // register int patch = (finger_length - rest);
+    register int patch = (finger_length + 3);
     for (int art = 0; art < article_sze; ++art) {
         web_weight = word_count[art];
         for (int i = 0; i < vector_length; ++i) {
-            if (!web_weight[i]) {
+            t = web_weight[i];
+            if (!t) {
                 continue;
             }
-            for (int j = 0; j < finger_length; ++j) {
-                article_fingers_array[art][j] += hash[i][j] * web_weight[i];
+            for (int j = 0; j < patch; j += 4) {
+                article_fingers_array[art][j] += hash[i][j] * t;
+                article_fingers_array[art][j + 1] += hash[i][j + 1] * t;
+                article_fingers_array[art][j + 2] += hash[i][j + 2] * t;
+                article_fingers_array[art][j + 3] += hash[i][j + 3] * t;
+                // article_fingers_array[art][j + 4] += hash[i][j + 4] * t;
+                // article_fingers_array[art][j + 5] += hash[i][j + 5] * t;
+                // article_fingers_array[art][j + 6] += hash[i][j + 6] * t;
+                // article_fingers_array[art][j + 7] += hash[i][j + 7] * t;
             }
+            // for (int j = 0; j < rest; ++j) {
+            //     article_fingers_array[art][j + patch] += hash[i][j + patch] * t;
+            // }
         }
-        for (int j = 0; j < finger_length; ++j) {
+        for (int j = 0; j < patch; j += 4) {
             article_fingers_array[art][j] = (unsigned) article_fingers_array[art][j] >> 31;
+            article_fingers_array[art][j + 1] = (unsigned) article_fingers_array[art][j + 1] >> 31;
+            article_fingers_array[art][j + 2] = (unsigned) article_fingers_array[art][j + 2] >> 31;
+            article_fingers_array[art][j + 3] = (unsigned) article_fingers_array[art][j + 3] >> 31;
+            // article_fingers_array[art][j + 4] = (unsigned) article_fingers_array[art][j + 4] >> 31;
+            // article_fingers_array[art][j + 5] = (unsigned) article_fingers_array[art][j + 5] >> 31;
+            // article_fingers_array[art][j + 6] = (unsigned) article_fingers_array[art][j + 6] >> 31;
+            // article_fingers_array[art][j + 7] = (unsigned) article_fingers_array[art][j + 7] >> 31;
         }
+        // for (int j = 0; j < rest; ++j) {
+        //     article_fingers_array[art][j + patch] = (unsigned) article_fingers_array[art][j + patch] >> 31;
+        // }
     }
 }
 
 void read_whole_samples() {
-    int fd = open("sample.txt", O_RDONLY);
+    int fd = open(SAMPLE_FILE, O_RDONLY);
     struct stat status;
     fstat(fd, &status);
     passage_len = status.st_size;
@@ -476,6 +575,12 @@ int main(int argc, char *argv[]) {
     // ======== read articles ========
 
     read_whole_articles();
+
+    // int pid = fork();
+
+    // if (pid == 0) {
+    //     return 0;
+    // }
 
     // sort the feature words (articles)
     walk_trie();
